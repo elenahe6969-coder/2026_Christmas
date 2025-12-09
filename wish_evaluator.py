@@ -278,8 +278,41 @@ if shared_wish_id:
         if decoded_wish and decoded_wish != shared_wish_text:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
     
-    # Get current wish data FROM SHARED STORAGE
+# Get current wish data FROM SHARED STORAGE
     wish_data = get_wish_data(shared_wish_id)
+
+    # Try to read probability from query params so shared page can enforce the same probability
+    prob_param = query_params.get("prob", [None])[0]
+    url_prob = None
+    if prob_param is not None:
+        try:
+            # allow values like "76.4" or "76" or "76.4%"
+            cleaned = str(prob_param).strip().rstrip('%').replace(',', '')
+            url_prob = max(0.0, min(99.9, float(cleaned)))
+        except Exception:
+            url_prob = None
+
+    # If wish exists but stored probability differs from the URL-provided probability,
+    # update the stored value so the shared-view matches the original view that created the link.
+    if wish_data and url_prob is not None:
+        stored_prob = float(wish_data.get('current_probability', 0.0))
+        # Only update when there's a meaningful difference (avoid noisy writes)
+        if abs(stored_prob - url_prob) > 0.05:
+            try:
+                wishes_data = load_wishes()
+                # ensure wish record still exists in the loaded file
+                if shared_wish_id in wishes_data:
+                    wishes_data[shared_wish_id]['current_probability'] = round(url_prob, 1)
+                    wishes_data[shared_wish_id]['last_updated'] = time.time()
+                    # if someone previously added unrealistic values, clamp to sensible range
+                    wishes_data[shared_wish_id]['current_probability'] = max(0.0, min(99.9, wishes_data[shared_wish_id]['current_probability']))
+                    save_wishes(wishes_data)
+                    # reload wish_data from disk so UI shows fresh value
+                    wish_data = wishes_data.get(shared_wish_id)
+            except Exception as e:
+                print("sync url_prob -> storage error:", e)
+
+    # If wish doesn't exist in storage, we'll create it later (existing logic handles that)
     
      # If wish doesn't exist in storage, create it from the URL data (use probability from URL if provided)
     if not wish_data and shared_wish_text:
