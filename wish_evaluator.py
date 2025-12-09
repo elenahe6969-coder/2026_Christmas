@@ -494,11 +494,11 @@ if not st.session_state.show_wish_results:
     wish_prompt = st.text_area("🎅 What's your wish?",
         placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
-        height=100,
+        height=120,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
 
-    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True):
+    if st.button("🎯 **Evaluate My Wish**", height=70, type="primary", use_container_width=True):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             # Show evaluation progress
             progress_bar = st.progress(0)
@@ -609,7 +609,7 @@ else:
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; padding: 2px; color: #666;'>
+<div style='text-align: center; padding: 5px; color: #666;'>
     <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
 </div>
 """, unsafe_allow_html=True)
