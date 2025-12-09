@@ -422,11 +422,6 @@ if shared_wish_id:
         
         # Auto-refresh indicator
         next_refresh = 15 - (st.session_state.refresh_counter % 3) * 5
-        st.markdown(f"""
-        <div class="refresh-indicator">
-            🔄 Auto-refreshing in {next_refresh} seconds • Last checked: {datetime.now().strftime('%H:%M:%S')}
-        </div>
-        """, unsafe_allow_html=True)
         
     else:
         st.error("❌ Wish not found. The link might be invalid or expired.")
