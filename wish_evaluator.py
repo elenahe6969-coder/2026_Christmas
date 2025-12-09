@@ -5,35 +5,8 @@ import time
 import random
 import json
 import os
+import hashlib
 from datetime import datetime
-
-# ---------------------------
-# Compatibility helper
-# ---------------------------
-def safe_rerun():
-    """Try to rerun the Streamlit script in a compatibility-safe way."""
-    try:
-        # preferred (older + many current versions)
-        if hasattr(st, "experimental_rerun"):
-            st.experimental_rerun()
-            return
-    except Exception:
-        pass
-
-    try:
-        # newer API in some versions
-        if hasattr(st, "script_request_rerun"):
-            st.script_request_rerun()
-            return
-    except Exception:
-        pass
-
-    # final safe fallback: stop current run (session_state persists)
-    try:
-        st.stop()
-    except Exception:
-        # If even st.stop() fails (very unlikely), just return
-        return
 
 # ---------------------------
 # Session state initialization
@@ -46,64 +19,93 @@ if 'my_wish_text' not in st.session_state:
     st.session_state.my_wish_text = ""
 if 'wish_id' not in st.session_state:
     st.session_state.wish_id = None
-if 'support_clicks' not in st.session_state:
-    st.session_state.support_clicks = {}
-if 'all_wishes' not in st.session_state:
-    st.session_state.all_wishes = []
 if 'show_wish_results' not in st.session_state:
     st.session_state.show_wish_results = False
 if 'supporter_id' not in st.session_state:
     # Keep a stable supporter id per session
     st.session_state.supporter_id = f"supporter_{random.randint(1000, 9999)}_{int(time.time())}"
-# flag to force a reload after updates
-if 'force_reload' not in st.session_state:
-    st.session_state.force_reload = False
-
-# Auto-refresh related session state
-if 'last_update_check' not in st.session_state:
-    st.session_state.last_update_check = time.time()
-if 'auto_refresh_counter' not in st.session_state:
-    st.session_state.auto_refresh_counter = 0
-if 'last_displayed_prob' not in st.session_state:
-    st.session_state.last_displayed_prob = None
-if 'refresh_triggered' not in st.session_state:
-    st.session_state.refresh_triggered = False
+if 'last_refresh_time' not in st.session_state:
+    st.session_state.last_refresh_time = time.time()
+if 'refresh_counter' not in st.session_state:
+    st.session_state.refresh_counter = 0
+if 'force_reload_flag' not in st.session_state:
+    st.session_state.force_reload_flag = False
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
+WISHES_LOCK_FILE = "wishes_data.json.lock"
 
 # ---------------------------
-# Storage helper functions
+# Enhanced storage helper functions with locking
 # ---------------------------
-def load_wishes():
-    """Load wishes from file (returns dict)."""
+def load_wishes_with_lock():
+    """Load wishes from file with file locking."""
+    import fcntl
     try:
+        if os.path.exists(WISHES_FILE):
+            with open(WISHES_FILE, 'r') as f:
+                # Try to acquire a shared lock
+                try:
+                    fcntl.flock(f, fcntl.LOCK_SH)
+                    data = json.load(f)
+                    return data if isinstance(data, dict) else {}
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+    except Exception as e:
+        print(f"load_wishes_with_lock error: {e}")
+        # Fallback to regular load
         if os.path.exists(WISHES_FILE):
             with open(WISHES_FILE, 'r') as f:
                 data = json.load(f)
                 return data if isinstance(data, dict) else {}
-    except Exception as e:
-        print("load_wishes error:", e)
     return {}
 
-def save_wishes(wishes_data):
-    """Save wishes to file (returns True/False)."""
+def save_wishes_with_lock(wishes_data):
+    """Save wishes to file with file locking."""
+    import fcntl
     try:
+        with open(WISHES_FILE, 'w') as f:
+            # Try to acquire an exclusive lock
+            try:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                json.dump(wishes_data, f, indent=2)
+                return True
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+    except Exception as e:
+        print(f"save_wishes_with_lock error: {e}")
+        # Fallback to regular save
         with open(WISHES_FILE, 'w') as f:
             json.dump(wishes_data, f, indent=2)
         return True
-    except Exception as e:
-        print("save_wishes error:", e)
-        return False
+    return False
 
 def get_wish_data(wish_id):
-    wishes_data = load_wishes()
-    return wishes_data.get(wish_id)
+    """Get wish data with automatic refresh."""
+    # Force refresh every 5 seconds or if reload flag is set
+    current_time = time.time()
+    force_refresh = st.session_state.get('force_reload_flag', False)
+    
+    if force_refresh or (current_time - st.session_state.last_refresh_time > 5):
+        st.session_state.last_refresh_time = current_time
+        st.session_state.refresh_counter += 1
+        st.session_state.force_reload_flag = False
+        
+        # Clear cache to force fresh load
+        if 'wishes_cache' in st.session_state:
+            del st.session_state.wishes_cache
+    
+    # Use caching to avoid repeated file reads
+    if 'wishes_cache' not in st.session_state:
+        st.session_state.wishes_cache = load_wishes_with_lock()
+    
+    return st.session_state.wishes_cache.get(wish_id)
 
 def create_or_update_wish(wish_id, wish_text, initial_probability):
-    """Create or update a wish in shared storage and return the wish dict."""
-    wishes_data = load_wishes()
+    """Create or update a wish in shared storage."""
+    wishes_data = load_wishes_with_lock()
     now = time.time()
+    
     if wish_id not in wishes_data:
         wishes_data[wish_id] = {
             'wish_text': wish_text,
@@ -112,70 +114,57 @@ def create_or_update_wish(wish_id, wish_text, initial_probability):
             'supporters': [],
             'total_luck_added': 0.0,
             'created_at': now,
-            'last_updated': now
+            'last_updated': now,
+            'version': 1
         }
     else:
-        # Update text & last_updated, keep existing current_probability unless overwritten elsewhere
+        # Update if needed
         wishes_data[wish_id]['wish_text'] = wish_text
         wishes_data[wish_id]['last_updated'] = now
-
-    save_wishes(wishes_data)
+        wishes_data[wish_id]['version'] = wishes_data[wish_id].get('version', 0) + 1
+    
+    save_wishes_with_lock(wishes_data)
+    
+    # Update cache
+    if 'wishes_cache' in st.session_state:
+        st.session_state.wishes_cache = wishes_data
+    
     return wishes_data[wish_id]
 
 def update_wish_probability(wish_id, increment, supporter_id):
-    """Update wish probability in shared storage (adds supporter if new)."""
-    wishes_data = load_wishes()
+    """Update wish probability in shared storage."""
+    wishes_data = load_wishes_with_lock()
+    
     if wish_id in wishes_data:
         wish_data = wishes_data[wish_id]
+        
+        # Initialize supporters list if not exists
         if 'supporters' not in wish_data:
             wish_data['supporters'] = []
+        
+        # Check if supporter already supported
         if supporter_id in wish_data['supporters']:
             return False, wish_data.get('current_probability', 0.0)
-
+        
+        # Add supporter and update probability
         wish_data['supporters'].append(supporter_id)
         new_probability = min(99.9, float(wish_data.get('current_probability', 0.0)) + float(increment))
         wish_data['current_probability'] = float(new_probability)
         wish_data['total_luck_added'] = float(wish_data.get('total_luck_added', 0.0)) + float(increment)
         wish_data['last_updated'] = time.time()
-        save_wishes(wishes_data)
-        return True, new_probability
-    return False, None
-
-# ---------------------------
-# Auto-refresh helper functions
-# ---------------------------
-def check_for_updates(wish_id, last_check_time):
-    """Check if wish data has been updated since last check"""
-    if not wish_id:
-        return False
-    
-    wish_data = get_wish_data(wish_id)
-    if wish_data and 'last_updated' in wish_data:
-        last_updated = wish_data['last_updated']
-        return float(last_updated) > last_check_time
-    return False
-
-def setup_auto_refresh():
-    """Set up automatic refresh mechanism"""
-    # Check for updates every 10 seconds
-    current_time = time.time()
-    
-    # Calculate time since last check
-    time_since_last_check = current_time - st.session_state.last_update_check
-    
-    # Update counter for visual feedback
-    st.session_state.auto_refresh_counter += 1
-    
-    # If 10 seconds have passed, check for updates
-    if time_since_last_check > 10:
-        st.session_state.last_update_check = current_time
+        wish_data['version'] = wish_data.get('version', 0) + 1
         
-        # Every 30 seconds (3 checks), force a refresh
-        if st.session_state.auto_refresh_counter % 3 == 0:
-            st.session_state.force_reload = True
-            return True
+        # Save and update cache
+        save_wishes_with_lock(wishes_data)
+        if 'wishes_cache' in st.session_state:
+            st.session_state.wishes_cache = wishes_data
+        
+        # Set force reload flag for all sessions
+        st.session_state.force_reload_flag = True
+        
+        return True, new_probability
     
-    return False
+    return False, None
 
 # ---------------------------
 # Utilities
@@ -184,26 +173,21 @@ def get_random_increment():
     return round(random.uniform(1.0, 10.0), 1)
 
 def generate_wish_id(wish_text):
-    import hashlib
     unique_str = f"{wish_text}_{time.time()}"
     return hashlib.md5(unique_str.encode()).hexdigest()[:10]
 
-def create_share_link(wish_id, wish_text):
-    """Create shareable link including current probability from session (if available)."""
-    # Put your actual deployed domain here
+def create_share_link(wish_id, wish_text, probability=None):
+    """Create shareable link."""
     base_url = "https://2026christmas-yourwish-mywish-elena.streamlit.app"
     short_wish = wish_text[:80]
     clean_wish = short_wish.replace('\n', ' ').replace('\r', ' ').replace('"', "'").replace('  ', ' ')
     encoded_wish = urllib.parse.quote_plus(clean_wish)
-
-    prob = ""
-    try:
-        prob_val = float(st.session_state.get('my_wish_probability', 0.0))
-        prob = f"&prob={prob_val:.1f}"
-    except Exception:
-        prob = ""
-
-    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}{prob}"
+    
+    if probability is None:
+        probability = st.session_state.get('my_wish_probability', 0.0)
+    
+    prob_val = f"&prob={float(probability):.1f}"
+    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}{prob_val}"
     return full_url.strip()
 
 def safe_decode_wish(encoded_wish):
@@ -222,11 +206,7 @@ def evaluate_wish_sentiment(wish_text):
     try:
         pipe = pipeline("sentiment-analysis")
         result = pipe(wish_text[:512])[0]
-        st.session_state.all_wishes.append({
-            'text': wish_text[:100],
-            'label': result.get('label'),
-            'score': result.get('score')
-        })
+        
         has_wish_keyword = any(keyword in wish_text.lower() for keyword in ['wish', 'hope', 'want', 'dream'])
         if result.get('label') == 'POSITIVE' and result.get('score', 0.0) > 0.6:
             return 'POSITIVE', result.get('score', 0.0)
@@ -257,11 +237,6 @@ st.markdown("""
         border-radius: 10px;
         font-weight: bold;
     }
-    .positive-wish {
-        border-left: 5px solid #28a745;
-        padding-left: 15px;
-        margin: 10px 0;
-    }
     .share-box {
         background-color: #f0f2f6;
         border: 2px solid #dee2e6;
@@ -290,50 +265,64 @@ st.markdown("""
         margin: 20px 0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    .friends-support {
-        background-color: #e8f5e8;
-        border: 1px solid #c8e6c9;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 15px 0;
-    }
     .update-notification {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
         border-radius: 10px;
         padding: 15px;
         margin: 15px 0;
-        animation: pulse 2s infinite;
+        animation: fadeIn 0.5s;
     }
     .refresh-indicator {
         background-color: #e3f2fd;
         border: 1px solid #bbdefb;
         border-radius: 8px;
-        padding: 10px;
+        padding: 8px;
         margin: 10px 0;
-        font-size: 14px;
+        font-size: 12px;
         text-align: center;
+        color: #1976d2;
     }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.8; }
-        100% { opacity: 1; }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    .spinning {
-        animation: spin 2s linear infinite;
-        display: inline-block;
+    .stProgress > div > div > div > div {
+        background-color: #4CAF50;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------
+# Auto-refresh mechanism
+# ---------------------------
+def setup_auto_refresh():
+    """Set up auto-refresh using Streamlit's experimental features."""
+    current_time = time.time()
+    
+    # Create a refresh trigger based on time
+    if 'auto_refresh_last' not in st.session_state:
+        st.session_state.auto_refresh_last = current_time
+    
+    # Check if 5 seconds have passed
+    if current_time - st.session_state.auto_refresh_last > 5:
+        st.session_state.auto_refresh_last = current_time
+        
+        # Force a rerun to refresh data
+        if st.session_state.get('force_reload_flag', False):
+            st.session_state.force_reload_flag = False
+            st.rerun()
+        
+        # Also rerun every 15 seconds to check for updates
+        if current_time - st.session_state.get('last_full_refresh', 0) > 15:
+            st.session_state.last_full_refresh = current_time
+            st.rerun()
+
+# ---------------------------
 # Main title
 # ---------------------------
-st.title("Christmas Wish 2026")
+st.title("🎄 Christmas Wish 2026")
 
 # ---------------------------
 # Query params handling
@@ -343,7 +332,7 @@ shared_wish_id = query_params.get("wish_id", None)
 shared_wish_text = query_params.get("wish", None)
 prob_param = query_params.get("prob", None)
 
-# Parse URL-provided probability if present
+# Parse URL-provided probability
 url_prob = None
 if prob_param:
     try:
@@ -352,20 +341,21 @@ if prob_param:
     except Exception:
         url_prob = None
 
-# Force reload if needed
-if st.session_state.get('force_reload', False):
-    # Clear query params cache to force fresh load
-    if 'query_params' in st.session_state:
-        del st.session_state.query_params
-    st.session_state.force_reload = False
-    time.sleep(0.1)  # Small delay
+# Setup auto-refresh
+setup_auto_refresh()
 
 # ---------------------------
 # Shared-wish page (if any)
 # ---------------------------
 if shared_wish_id:
-    # Set up auto-refresh
-    should_refresh = setup_auto_refresh()
+    # Show refresh indicator
+    with st.container():
+        col1, col2, col3 = st.columns([3, 1, 3])
+        with col2:
+            refresh_btn = st.button("🔄", help="Refresh page")
+            if refresh_btn:
+                st.session_state.force_reload_flag = True
+                st.rerun()
     
     # Show shared wish support section
     st.markdown("""
@@ -374,133 +364,112 @@ if shared_wish_id:
     Please click the button below to share your Christmas luck and help make my wish come true!"*
     """)
 
-    # Decode and show the wish text from URL (if provided)
+    # Decode wish text
+    decoded_wish = ""
     if shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
 
-    # ALWAYS load fresh data from disk (not cached)
+    # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
-
-    # If wish exists on disk and URL provided a probability, synchronize if they differ
-    if wish_data and url_prob is not None:
-        try:
-            stored_prob = float(wish_data.get('current_probability', 0.0))
-            if abs(stored_prob - url_prob) > 0.05:
-                wishes_data = load_wishes()
-                if shared_wish_id in wishes_data:
-                    wishes_data[shared_wish_id]['current_probability'] = round(url_prob, 1)
-                    wishes_data[shared_wish_id]['last_updated'] = time.time()
-                    wishes_data[shared_wish_id]['current_probability'] = max(0.0, min(99.9, wishes_data[shared_wish_id]['current_probability']))
-                    save_wishes(wishes_data)
-                    wish_data = wishes_data.get(shared_wish_id)
-        except Exception as e:
-            print("sync url_prob -> storage error:", e)
-
-    # If wish not on disk, create it using the URL-provided probability if available
-    if not wish_data and shared_wish_text:
-        decoded_wish = safe_decode_wish(shared_wish_text)
-        if decoded_wish:
-            initial_prob = url_prob if url_prob is not None else 60.0
-            wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
-
-    # Display current probability if we have wish_data now
+    
+    # Create wish if it doesn't exist
+    if not wish_data and decoded_wish:
+        initial_prob = url_prob if url_prob is not None else 60.0
+        wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
+    
+    # If we have wish data, display it
     if wish_data:
         current_prob = float(wish_data.get('current_probability', 0.0))
         supporters_count = len(wish_data.get('supporters', []))
         
-        # Check if probability has changed since last display
-        if st.session_state.last_displayed_prob is not None:
-            if abs(current_prob - st.session_state.last_displayed_prob) > 0.01:
-                # Show update notification
-                st.markdown(f"""
-                <div class="update-notification">
-                    🔄 **Probability Updated!** 
-                    From {st.session_state.last_displayed_prob:.1f}% to {current_prob:.1f}%
-                </div>
-                """, unsafe_allow_html=True)
+        # Store last seen probability for comparison
+        if 'last_seen_prob' not in st.session_state:
+            st.session_state.last_seen_prob = current_prob
         
-        st.session_state.last_displayed_prob = current_prob
+        # Check for updates
+        if abs(current_prob - st.session_state.last_seen_prob) > 0.01:
+            st.markdown(f"""
+            <div class="update-notification">
+                📈 **Update!** Probability increased from {st.session_state.last_seen_prob:.1f}% to {current_prob:.1f}%
+            </div>
+            """, unsafe_allow_html=True)
+            st.session_state.last_seen_prob = current_prob
         
-        # Format last updated time
-        last_updated_time = datetime.fromtimestamp(wish_data.get('last_updated', time.time()))
-        time_str = last_updated_time.strftime('%H:%M:%S')
-        
+        # Display probability with visual progress
         st.markdown(f"""
         <div class="probability-display">
-            <h3>Current Probability</h3>
+            <h3>Current Wish Probability</h3>
             <h1>{current_prob:.1f}%</h1>
-            <p>Supported by {supporters_count} friend{'s' if supporters_count != 1 else ''} 🎄</p>
-            <p><small>Last updated: {time_str}</small></p>
+            <p>🎅 Supported by {supporters_count} friend{'s' if supporters_count != 1 else ''}</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Auto-refresh indicator
-        current_time = time.time()
-        time_since_last_check = current_time - st.session_state.last_update_check
-        next_check_in = max(0, 10 - (time_since_last_check % 10))
+        # Show progress bar
+        st.progress(current_prob / 100.0)
         
+        # Auto-refresh indicator
         st.markdown(f"""
         <div class="refresh-indicator">
-            <span class="spinning">🔄</span> Auto-refreshing... Next update in {next_check_in:.0f}s
+            🔄 Auto-refreshing • Last checked: {datetime.now().strftime('%H:%M:%S')}
         </div>
         """, unsafe_allow_html=True)
         
     else:
-        st.error("Shared wish not found and no wish text provided in the URL.")
+        st.error("Wish not found. The link might be invalid.")
 
     # Support button
     increment = get_random_increment()
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button(f"🍀 **Click to Add +{increment}% Christmas Luck**", type="primary", use_container_width=True):
-            success, new_probability = update_wish_probability(
-                shared_wish_id,
-                increment,
-                st.session_state.supporter_id
-            )
-            if success:
-                # Force immediate refresh
-                st.session_state.force_reload = True
-                st.session_state.last_update_check = time.time() - 20  # Force immediate check
-                st.session_state.refresh_triggered = True
-                
-                with st.spinner("🎅 Sending your Christmas luck..."):
-                    time.sleep(1)
-                st.balloons()
-                st.success(f"""
-                **Thank you for sharing your Christmas luck! 🎄**
-                
-                *You added +{increment}% to your friend's wish!*
-                
-                **New probability: {new_probability:.1f}%**
-                
-                *May your kindness return to you in 2026!*
-                """)
-                # Small delay before rerun to show success message
-                time.sleep(1.5)
-                st.rerun()
-            else:
-                st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
-
-    # Add a manual refresh button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🔄 Refresh Now", key="refresh_button", use_container_width=True):
-            st.session_state.force_reload = True
-            st.session_state.last_update_check = time.time() - 20
-            st.rerun()
-
-    # Options for the supporter / link to main app
-    st.markdown("---")
-    st.markdown("### Your Turn to Make a Wish! 🎄")
-    st.markdown("📝 https://2026wisheval-elena-python.streamlit.app/")
     
-    # Force a rerun if refresh is needed
-    if should_refresh or st.session_state.force_reload:
-        st.session_state.force_reload = False
-        time.sleep(0.5)  # Small delay to ensure UI updates
+    st.markdown("---")
+    st.markdown(f"### Add Your Christmas Luck! 🍀")
+    st.markdown(f"*Click below to add **+{increment}%** to this wish*")
+    
+    if st.button(f"🌟 I believe in this wish too! (+{increment}%)", type="primary", use_container_width=True):
+        success, new_probability = update_wish_probability(
+            shared_wish_id,
+            increment,
+            st.session_state.supporter_id
+        )
+        
+        if success:
+            # Immediate visual feedback
+            with st.spinner("✨ Adding your Christmas luck..."):
+                time.sleep(1)
+            
+            st.balloons()
+            st.success(f"""
+            🎄 **Thank you!** You added **+{increment}%** Christmas luck!
+            
+            **New Probability: {new_probability:.1f}%**
+            
+            *Your kindness will return to you in 2026!*
+            """)
+            
+            # Force immediate refresh
+            st.session_state.force_reload_flag = True
+            st.session_state.last_seen_prob = new_probability
+            
+            # Auto-refresh after 2 seconds
+            time.sleep(2)
+            st.rerun()
+        else:
+            st.info("You've already shared your Christmas luck for this wish. Thank you! 🎅")
+
+    # Additional refresh button
+    st.markdown("---")
+    if st.button("🔄 Refresh Page to See Latest Updates", use_container_width=True):
+        st.session_state.force_reload_flag = True
+        st.rerun()
+
+    # Make your own wish
+    st.markdown("---")
+    st.markdown("### ✨ Make Your Own Wish!")
+    st.markdown("Create your own Christmas wish and share it with friends!")
+    if st.button("🎄 Make My Wish", use_container_width=True):
+        # Clear query params to go to main page
+        st.query_params.clear()
         st.rerun()
     
     st.stop()
@@ -547,8 +516,6 @@ if not st.session_state.show_wish_results:
                         st.session_state.my_wish_probability = wish_data['current_probability']
                         st.session_state.wish_id = wish_id
                         st.session_state.show_wish_results = True
-                        # ensure fresh view on rerun
-                        st.session_state.force_reload = True
                         st.rerun()
                     else:
                         st.warning("### 🎄 Let's Make This Wish Even Better!")
@@ -564,7 +531,7 @@ if not st.session_state.show_wish_results:
                         """)
                 except Exception as e:
                     st.error(f"⚠️ Technical issue: {str(e)[:200]}")
-                    # Fallback to a reasonable probability & continue
+                    # Fallback
                     base_probability = 65.0
                     wish_id = generate_wish_id(wish_prompt)
                     wish_data = create_or_update_wish(wish_id, wish_prompt, base_probability)
@@ -572,7 +539,6 @@ if not st.session_state.show_wish_results:
                     st.session_state.my_wish_probability = base_probability
                     st.session_state.wish_id = wish_id
                     st.session_state.show_wish_results = True
-                    st.session_state.force_reload = True
                     st.rerun()
         else:
             st.warning("📝 Please write your wish (at least 4 characters)")
@@ -581,35 +547,46 @@ if not st.session_state.show_wish_results:
 # Show wish results
 # ---------------------------
 else:
-    # Reload latest from disk for freshest values
-    wish_data = load_wishes().get(st.session_state.wish_id)
+    # Get latest wish data
+    wish_data = get_wish_data(st.session_state.wish_id)
+    
     if wish_data:
-        # update session-state with freshest probability
-        st.session_state.my_wish_probability = wish_data.get('current_probability', st.session_state.my_wish_probability)
-        current_prob = float(st.session_state.my_wish_probability)
+        # Update session state with latest probability
+        current_prob = float(wish_data.get('current_probability', 0.0))
+        st.session_state.my_wish_probability = current_prob
         supporters_count = len(wish_data.get('supporters', []))
 
         st.markdown(f"""
         <div class="probability-display">
             <h3>Your Wish Probability</h3>
             <h1>{current_prob:.1f}%</h1>
-            <p>{supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
+            <p>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        st.progress(current_prob / 100.0)
 
         # Share section
         st.markdown("---")
         st.markdown("### 📤 Share with friends to get more Christmas luck!")
-        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text)
+        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-
-        if st.button("🔄 Fetch latest probability"):
-            # Force reload from disk and refresh UI
-            reloaded = load_wishes().get(st.session_state.wish_id)
-            if reloaded:
-                st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
-            st.session_state.force_reload = True
+        
+        # Copy button
+        st.code(share_link, language="text")
+        
+        # Refresh button
+        if st.button("🔄 Check for Updates", key="check_updates"):
+            st.session_state.force_reload_flag = True
             st.rerun()
+        
+        # Make new wish button
+        if st.button("✨ Make Another Wish", key="new_wish"):
+            st.session_state.show_wish_results = False
+            st.session_state.my_wish_text = ""
+            st.session_state.wish_id = None
+            st.rerun()
+            
     else:
         st.error("Wish data not found. Please make a new wish.")
         if st.button("📝 Make New Wish", type="primary"):
@@ -620,4 +597,23 @@ else:
 
 # Footer
 st.markdown("---")
-st.markdown("Hope you will have fun with this app! - Yours, Elena")
+st.markdown("🎄 *Hope you will have fun with this app! - Yours, Elena* 🎄")
+
+# Auto-refresh script using JavaScript
+st.components.v1.html("""
+<script>
+// Auto-refresh every 10 seconds
+setTimeout(function() {
+    window.location.reload();
+}, 10000);
+
+// Also refresh when page becomes visible again
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    }
+});
+</script>
+""")
