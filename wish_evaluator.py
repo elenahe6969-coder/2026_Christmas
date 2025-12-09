@@ -573,10 +573,10 @@ else:
 
         # Display wish probability
         st.markdown(f"""
-        <div class="probability-display">
-            <h2>✨ Your Wish Probability</h2>
-            <h1 style='font-size: 48px; margin: 20px 0;'>{current_prob:.1f}%</h1>
-            <p style='font-size: 18px;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck with you!</p>
+       <div class="probability-display compact-spacing">
+            <h3 style='margin: 5px 0;'>✨ Your Wish Probability</h3>
+            <h1 style='font-size: 48px; margin: 5px 0;'>{current_prob:.1f}%</h1>
+            <p style='font-size: 14px; margin: 5px 0;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
         
