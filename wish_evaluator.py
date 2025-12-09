@@ -432,8 +432,8 @@ else:
     wish_data = load_wishes().get(st.session_state.wish_id)
     
     if wish_data:
-        # Sync latest current_probability into session state so UI shows fresh value
-        st.session_state.my_wish_probability = wish_data.get('current_probability', st.session_state.my_wish_probability)
+        # Sync latest probability into session state so UI shows fresh value
+        st.session_state.my_wish_probability = wish_data.get('base_probability', st.session_state.my_wish_probability)
         current_prob = st.session_state.my_wish_probability
         supporters_count = len(wish_data.get('supporters', []))
         
@@ -459,7 +459,7 @@ else:
         if st.button("🔄 Fetch latest probability"):
             reloaded = load_wishes().get(st.session_state.wish_id)
             if reloaded:
-                st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
+                st.session_state.my_wish_probability = reloaded.get('base_probability', st.session_state.my_wish_probability)
             # use correct API to rerun
             st.rerun()
     
