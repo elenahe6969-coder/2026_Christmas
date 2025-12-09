@@ -335,7 +335,7 @@ def check_and_refresh():
 # ---------------------------
 # Main title
 # ---------------------------
-st.title("🎄 Christmas Wish 2026")
+st.title("Christmas Wish 2026")
 
 # ---------------------------
 # Query params handling
