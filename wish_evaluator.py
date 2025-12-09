@@ -201,7 +201,7 @@ def evaluate_wish_sentiment(wish_text):
 # Page config & CSS
 # ---------------------------
 st.set_page_config(
-    page_title="Christmas Wish 2026",
+    page_title="Wish for 2026",
     page_icon="🎄",
     layout="centered"
 )
@@ -335,7 +335,7 @@ def check_and_refresh():
 # ---------------------------
 # Main title
 # ---------------------------
-st.title("Christmas Wish 2026")
+st.title("Wish for 2026")
 
 # ---------------------------
 # Query params handling
@@ -530,7 +530,7 @@ if not st.session_state.show_wish_results:
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h2>✨ Hi there, Merry Christmas! 🎄</h2>
-        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help make it come true!</p>
+        <p style='font-size: 18px;'>Tell me your wish, and I'll help evaluate!</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -687,7 +687,6 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; padding: 20px; color: #666;'>
     <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
-    <p style='font-size: 12px;'>Share the Christmas spirit with your friends!</p>
 </div>
 """, unsafe_allow_html=True)
 
