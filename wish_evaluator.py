@@ -190,18 +190,26 @@ def generate_wish_id(wish_text):
     return hashlib.md5(unique_str.encode()).hexdigest()[:10]
 
 def create_share_link(wish_id, wish_text):
-    """Create a shareable link"""
+    """Create a shareable link that includes the current probability so shared view stays consistent."""
     try:
         base_url = "https://2026christmas-yourwish-mywish-elena.streamlit.app"
     except:
         base_url = "http://localhost:8501"
     
-    # Use a shorter version of the wish for URL
     short_wish = wish_text[:80]
     clean_wish = short_wish.replace('\n', ' ').replace('\r', ' ').replace('"', "'").replace('  ', ' ')
     encoded_wish = urllib.parse.quote_plus(clean_wish)
-    
-    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}"
+
+    # include current probability if available in session_state (fallback to empty)
+    prob = ""
+    try:
+        prob_val = float(st.session_state.get('my_wish_probability', "")) if 'my_wish_probability' in st.session_state else ""
+        if prob_val != "":
+            prob = f"&prob={prob_val:.1f}"
+    except Exception:
+        prob = ""
+
+    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}{prob}"
     return full_url.strip()
 
 def safe_decode_wish(encoded_wish):
@@ -273,13 +281,19 @@ if shared_wish_id:
     # Get current wish data FROM SHARED STORAGE
     wish_data = get_wish_data(shared_wish_id)
     
-    # If wish doesn't exist in storage, create it from the URL data
+     # If wish doesn't exist in storage, create it from the URL data (use probability from URL if provided)
     if not wish_data and shared_wish_text:
-        # Create a temporary wish from the URL data
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
-            # Use a default probability for shared wishes
-            wish_data = create_or_update_wish(shared_wish_id, decoded_wish, 60.0)
+            # Try to read probability from query params so shared page shows the same probability
+            try:
+                prob_param = query_params.get("prob", [None])[0]
+                initial_prob = float(prob_param) if prob_param is not None else 60.0
+            except Exception:
+                initial_prob = 60.0
+
+            # Create a temporary wish with the probability carried in the URL (prevents mismatch)
+            wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
     
     # Show current probability
     if wish_data:
