@@ -331,12 +331,6 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
-
-# ---------------------------
-# Main title
-# ---------------------------
-st.title("Wish for 2026")
-
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -504,12 +498,12 @@ if not st.session_state.show_wish_results:
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h2>✨ Hi there, Merry Christmas! 🎄</h2>
-        <p style='font-size: 18px;'>Tell me your wish, and I'll help evaluate!</p>
+        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate!</p>
     </div>
     """, unsafe_allow_html=True)
     
     wish_prompt = st.text_area(
-        "🎅 **What's your wish for 2026?**",
+        "🎅 **What's your wish?**",
         placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
         height=120,
