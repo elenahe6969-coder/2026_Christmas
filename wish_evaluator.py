@@ -574,10 +574,9 @@ else:
         # Display wish probability
         st.markdown(f"""
         <div class="probability-display compact-spacing">
-            <h3>Current Probability</h3>
-            <h1 style='font-size: 56px; margin: 5px 0;'>{current_prob:.1f}%</h1>
-            <p style='font-size: 18px;'>🎅 Supported by <b>{supporters_count}</b> friend{'s' if supporters_count != 1 else ''}</p>
-            <p style='font-size: 12px; opacity: 0.8;'>Last updated: {datetime.fromtimestamp(last_updated).strftime('%H:%M:%S')}</p>
+            <h3 style='margin: 5px 0;'>✨ Your Wish Probability</h3>
+            <h1 style='font-size: 48px; margin: 5px 0;'>{current_prob:.1f}%</h1>
+            <p style='font-size: 18px; margin: 5px 0;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
         
