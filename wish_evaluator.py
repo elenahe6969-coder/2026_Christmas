@@ -654,24 +654,11 @@ else:
         
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
         
-        # Copy button
-        if st.button("📋 Copy Link to Clipboard", key="copy_link"):
-            st.code(share_link, language="text")
-            st.success("✅ Link copied! Share it with your friends!")
-        
         # Action buttons
-        st.markdown("---")
-        col1, col2 = st.columns(2)
+        col1 = st.columns(1)
         
         with col1:
             if st.button("🔄 Check for Updates", use_container_width=True):
-                st.rerun()
-        
-        with col2:
-            if st.button("✨ Make New Wish", use_container_width=True):
-                st.session_state.show_wish_results = False
-                st.session_state.my_wish_text = ""
-                st.session_state.wish_id = None
                 st.rerun()
                 
     else:
