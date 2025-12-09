@@ -655,7 +655,7 @@ else:
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
         
         # Action buttons
-        col1 = st.columns(1)
+        col1,col2 = st.columns(2)
         
         with col1:
             if st.button("🔄 Check for Updates", use_container_width=True):
