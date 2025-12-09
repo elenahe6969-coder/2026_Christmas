@@ -386,7 +386,7 @@ if not st.session_state.show_wish_results:
                         
                         # Save to session state
                         st.session_state.my_wish_text = wish_prompt
-                        st.session_state.my_wish_probability = wish_data['base_probability']
+                        st.session_state.my_wish_probability = wish_data['current_probability']
                         st.session_state.wish_id = wish_id
                         st.session_state.show_wish_results = True
                         
@@ -433,7 +433,7 @@ else:
     
     if wish_data:
         # Sync latest probability into session state so UI shows fresh value
-        st.session_state.my_wish_probability = wish_data.get('base_probability', st.session_state.my_wish_probability)
+        st.session_state.my_wish_probability = wish_data.get('current_probability', st.session_state.my_wish_probability)
         current_prob = st.session_state.my_wish_probability
         supporters_count = len(wish_data.get('supporters', []))
         
