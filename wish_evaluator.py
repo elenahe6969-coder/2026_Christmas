@@ -325,7 +325,7 @@ if shared_wish_id:
                 # Update the display immediately: reload from disk and update session state, then rerun
                 reloaded = load_wishes().get(shared_wish_id)
                 if reloaded:
-                    st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
+                    st.session_state.my_wish_probability = reloaded.get('current_prob', st.session_state.my_wish_probability)
                 st.rerun()
             else:
                 st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
@@ -441,7 +441,7 @@ else:
         st.markdown(f"""
         <div class="probability-display">
             <h3>Your Wish Probability</h3>
-            <h1>{current_prob:.1f}%</h1>
+            <h1>{current_probabilitycurrent_prob:.1f}%</h1>
             <p>{supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
@@ -459,7 +459,7 @@ else:
         if st.button("🔄 Fetch latest probability"):
             reloaded = load_wishes().get(st.session_state.wish_id)
             if reloaded:
-                st.session_state.my_wish_probability = reloaded.get('base_probability', st.session_state.my_wish_probability)
+                st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
             # use correct API to rerun
             st.rerun()
     
