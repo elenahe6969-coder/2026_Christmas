@@ -303,7 +303,10 @@ if shared_wish_id:
     *"Merry Christmas! I just made a wish for 2026. 
     Please click the button below to share your Christmas luck and help make my wish come true!"*
     """)
-
+# Auto-refresh every 15 seconds
+    time.sleep(15)
+    st.experimental_rerun()
+    
     # Decode and show the wish text from URL (if provided)
     if shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
