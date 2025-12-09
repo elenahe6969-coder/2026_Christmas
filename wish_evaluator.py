@@ -362,7 +362,7 @@ if shared_wish_id:
     # Show shared wish support section
     st.markdown("""
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
-    border-radius: 15px; margin: 15px 0;'>
+    border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
     <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
     Please click the button below to share your Christmas luck and help make my wish come true!"</i></p>
@@ -494,28 +494,9 @@ if not st.session_state.show_wish_results:
     wish_prompt = st.text_area("🎅 What's your wish?",
         placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
-        height=120,
+        height=100,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
-
-    with st.expander("💡 *Tips for Magical Wishes*", expanded=False):
-        st.markdown("""
-        **✨ Best ways to start your wish:**
-        - "I wish to..."
-        - "I hope to..."
-        - "I want to..."
-        - "My dream is to..."
-        - "I would love to..."
-        
-        **🎯 Examples of great wishes:**
-        - I wish to learn Spanish fluently
-        - I hope to get a promotion at work
-        - My dream is to travel to Japan
-        - I want to improve my health and fitness
-        - I would love to start my own business
-        
-        **🌟 Make it positive and specific for best results!**
-        """)
 
     if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True):
         if wish_prompt and len(wish_prompt.strip()) > 3:
