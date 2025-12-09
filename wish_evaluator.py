@@ -361,7 +361,7 @@ if shared_wish_id:
     
     # Show shared wish support section
     st.markdown("""
-    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
+    <div style='text-align: center; padding: 15px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
     border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
     <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
