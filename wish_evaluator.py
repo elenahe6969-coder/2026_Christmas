@@ -192,7 +192,7 @@ def generate_wish_id(wish_text):
 def create_share_link(wish_id, wish_text):
     """Create a shareable link"""
     try:
-        base_url = "https://2026christmas-yourwish-mywish-elena."
+        base_url = "https://2026christmas-yourwish-mywish-elena.streamlit.app"
     except:
         base_url = "http://localhost:8501"
     
