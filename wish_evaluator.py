@@ -431,7 +431,6 @@ if shared_wish_id:
     
     st.markdown("---")
     st.markdown(f"### ✨ Add Your Christmas Luck!")
-    st.markdown(f"*Each click adds **+{increment}%** to the wish probability*")
     
     # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
@@ -468,22 +467,6 @@ if shared_wish_id:
             st.rerun()
         else:
             st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
-    
-    # Additional options
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔄 Force Refresh", use_container_width=True):
-            st.rerun()
-    
-    with col2:
-        if st.button("📱 Copy Share Link", use_container_width=True):
-            if decoded_wish:
-                share_link = create_share_link(shared_wish_id, decoded_wish, 
-                                             wish_data.get('current_probability', url_prob) if wish_data else url_prob)
-                st.code(share_link, language="text")
-                st.success("Link copied! Share it with more friends!")
     
     # Make your own wish
     st.markdown("---")
