@@ -1,4 +1,3 @@
-
 import streamlit as st
 import urllib.parse
 import time
@@ -8,7 +7,7 @@ import os
 import hashlib
 from datetime import datetime
 
-# ---------------------------s
+# ---------------------------
 # Session state initialization
 # ---------------------------
 if 'supported_wishes' not in st.session_state:
@@ -28,6 +27,13 @@ if 'last_refresh_time' not in st.session_state:
     st.session_state.last_refresh_time = time.time()
 if 'refresh_counter' not in st.session_state:
     st.session_state.refresh_counter = 0
+# NEW: Add session state for success message persistence
+if 'show_success_message' not in st.session_state:
+    st.session_state.show_success_message = False
+if 'success_data' not in st.session_state:
+    st.session_state.success_data = {}
+if 'success_timestamp' not in st.session_state:
+    st.session_state.success_timestamp = 0
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
@@ -199,16 +205,29 @@ def evaluate_wish_sentiment(wish_text):
         return 'NEGATIVE', score
 
 # ---------------------------
-# Page config & CSS
+# Page config & CSS - REMOVED DEFAULT PADDING
 # ---------------------------
 st.set_page_config(
     page_title="Wish for 2026",
     page_icon="🎄",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="collapsed"  # Collapse sidebar by default
 )
 
 st.markdown("""
 <style>
+    /* Remove default Streamlit padding/margin */
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Compact header styling */
+    .compact-header {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
     .stButton > button {
         background-color: #FF6B6B;
         color: white;
@@ -238,8 +257,8 @@ st.markdown("""
         font-style: italic;
         font-size: 20px;
         color: #2c3e50;
-        margin: 20px 0;
-        padding: 20px;
+        margin: 15px 0;
+        padding: 15px;
         background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
         border-radius: 15px;
         border-left: 5px solid #e74c3c;
@@ -248,19 +267,19 @@ st.markdown("""
     .probability-display {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 30px;
-        border-radius: 20px;
+        padding: 20px;
+        border-radius: 15px;
         text-align: center;
-        margin: 25px 0;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        margin: 15px 0;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     .update-notification {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         border: none;
         color: white;
-        border-radius: 12px;
-        padding: 15px;
-        margin: 15px 0;
+        border-radius: 10px;
+        padding: 12px;
+        margin: 10px 0;
         animation: fadeIn 0.5s;
         text-align: center;
         font-weight: bold;
@@ -268,10 +287,10 @@ st.markdown("""
     .refresh-indicator {
         background-color: rgba(231, 76, 60, 0.1);
         border: 2px solid #e74c3c;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 15px 0;
-        font-size: 14px;
+        border-radius: 8px;
+        padding: 8px;
+        margin: 10px 0;
+        font-size: 12px;
         text-align: center;
         color: #e74c3c;
     }
@@ -292,8 +311,11 @@ st.markdown("""
         color: white;
         padding: 20px;
         border-radius: 15px;
-        margin: 20px 0;
+        margin: 15px 0;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         animation: fadeIn 0.5s;
+        border: 3px solid rgba(255,255,255,0.5);
     }
     .stProgress > div > div > div > div {
         background: linear-gradient(90deg, #4CAF50, #8BC34A);
@@ -301,11 +323,30 @@ st.markdown("""
     .stTextArea textarea {
         border-radius: 10px;
         border: 2px solid #dee2e6;
-        padding: 15px;
+        padding: 12px;
         font-size: 16px;
+        margin: 10px 0;
     }
     h1, h2, h3 {
         color: #2c3e50;
+        margin: 0.5rem 0;
+    }
+    .stale-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 8px 0;
+        font-size: 12px;
+    }
+    /* Compact spacing for elements */
+    .compact-spacing {
+        margin: 8px 0;
+    }
+    /* Reduce space between sections */
+    .section-divider {
+        margin: 15px 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -332,6 +373,7 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
+
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -356,15 +398,34 @@ check_and_refresh()
 # Shared-wish page (if any)
 # ---------------------------
 if shared_wish_id:
-    # Show refresh button
+    # Clear success message if it's older than 10 seconds
+    if st.session_state.show_success_message:
+        if time.time() - st.session_state.success_timestamp > 10:
+            st.session_state.show_success_message = False
+    
+    # Show success message if it exists
+    if st.session_state.show_success_message and st.session_state.success_data:
+        increment = st.session_state.success_data.get('increment', 0)
+        new_probability = st.session_state.success_data.get('new_probability', 0)
+        
+        st.markdown(f"""
+        <div class="success-message compact-spacing">
+            <h3>🎄 Thank You!</h3>
+            <p style="font-size: 18px;">You added <b>+{increment}%</b> Christmas luck!</p>
+            <p style="font-size: 22px; margin: 10px 0;"><b>New Probability: {new_probability:.1f}%</b></p>
+            <p style="font-size: 14px;"><i>Your kindness will return to you in 2026! ✨</i></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Show refresh button (compact)
     col1, col2, col3 = st.columns([1, 2, 1])
     
-    # Show shared wish support section
+    # Show shared wish support section (compact)
     st.markdown("""
-    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
-    border-radius: 15px; margin: 20px 0;'>
-    <h3>🎅 Message from your friend:</h3>
-    <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
+    <div style='text-align: center; padding: 15px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
+    border-radius: 12px; margin: 10px 0;'>
+    <h3 style='margin: 5px 0;'>🎅 Message from your friend:</h3>
+    <p style='font-size: 16px; margin: 5px 0;'><i>"Merry Christmas! I just made a wish for 2026. 
     Please click the button below to share your Christmas luck and help make my wish come true!"</i></p>
     </div>
     """, unsafe_allow_html=True)
@@ -374,272 +435,4 @@ if shared_wish_id:
     if shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
-            st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
-
-    # Get current wish data
-    wish_data = get_wish_data(shared_wish_id)
-    
-    # Create wish if it doesn't exist
-    if not wish_data and decoded_wish:
-        initial_prob = url_prob if url_prob is not None else 60.0
-        wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
-    
-    # If we have wish data, display it
-    if wish_data:
-        current_prob = float(wish_data.get('current_probability', 0.0))
-        supporters_count = len(wish_data.get('supporters', []))
-        
-        # Store last seen probability for comparison
-        if 'last_seen_prob' not in st.session_state:
-            st.session_state.last_seen_prob = current_prob
-        
-        # Check for updates
-        if abs(current_prob - st.session_state.last_seen_prob) > 0.01:
-            st.markdown(f"""
-            <div class="update-notification">
-                🎉 **Probability Updated!** 
-                From {st.session_state.last_seen_prob:.1f}% to {current_prob:.1f}%
-            </div>
-            """, unsafe_allow_html=True)
-            st.session_state.last_seen_prob = current_prob
-        
-        # Auto-refresh indicator
-        next_refresh = 15 - (st.session_state.refresh_counter % 3) * 5
-        
-    else:
-        st.error("❌ Wish not found. The link might be invalid or expired.")
-
-    # Support button
-    increment = get_random_increment()
-    
-    st.markdown("---")
-    st.markdown(f"### ✨ Add Your Christmas Luck!")
-    
-    # Create a unique key for the button
-    button_key = f"support_button_{shared_wish_id}"
-    
-    if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
-                 type="primary", 
-                 use_container_width=True,
-                 key=button_key):
-        
-        success, new_probability = update_wish_probability(
-            shared_wish_id,
-            increment,
-            st.session_state.supporter_id
-        )
-        
-        if success:
-            # Show success message
-            st.markdown(f"""
-            <div class="success-message">
-                <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> Christmas luck!</p>
-                <p><b>New Probability: {new_probability:.1f}%</b></p>
-                <p><i>Your kindness will return to you in 2026!</i></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.balloons()
-            
-            # Update session state
-            st.session_state.last_seen_prob = new_probability
-            
-            # Force immediate refresh after 3 seconds
-            time.sleep(3)
-            st.rerun()
-        else:
-            st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
-    
-    # Make your own wish
-    st.markdown("---")
-    st.markdown("### 🎄 Ready to Make Your Own Wish?")
-    if st.button("✨ Create My Wish", use_container_width=True):
-        # Clear query params to go to main page
-        st.query_params.clear()
-        st.rerun()
-    
-    # Add JavaScript for auto-refresh
-    st.components.v1.html("""
-    <script>
-    // Auto-refresh every 15 seconds
-    setTimeout(function() {
-        window.location.reload();
-    }, 15000);
-    
-    // Refresh when page becomes visible
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            setTimeout(function() {
-                window.location.reload();
-            }, 2000);
-        }
-    });
-    </script>
-    """)
-    
-    st.stop()
-
-# ---------------------------
-# Main app: create/evaluate wish
-# ---------------------------
-if not st.session_state.show_wish_results:
-    st.markdown("""
-    <div style='text-align: center; padding: 20px;'>
-        <h2>✨ Hi there, Merry Christmas! 🎄</h2>
-        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate the probability!</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    wish_prompt = st.text_area("🎅 What's your wish?",
-        placeholder="Example: I wish to learn Spanish fluently in 2026...",
-        key="wish_input",
-        height=120,
-        help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
-    )
-
-    with st.expander("💡 *Tips for Magical Wishes*", expanded=False):
-        st.markdown("""
-        **✨ Best ways to start your wish:**
-        - "I wish to..."
-        - "I hope to..."
-        - "I want to..."
-        - "My dream is to..."
-        - "I would love to..."
-        
-        **🎯 Examples of great wishes:**
-        - I wish to learn Spanish fluently
-        - I hope to get a promotion at work
-        - My dream is to travel to Japan
-        - I want to improve my health and fitness
-        - I would love to start my own business
-        
-        **🌟 Make it positive and specific for best results!**
-        """)
-
-    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True):
-        if wish_prompt and len(wish_prompt.strip()) > 3:
-            # Show evaluation progress
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            # Simulate evaluation steps
-            for i in range(1, 4):
-                if i == 1:
-                    status_text.text("🔮 Reading your wish...")
-                elif i == 2:
-                    status_text.text("🎄 Consulting the Christmas elves...")
-                elif i == 3:
-                    status_text.text("✨ Calculating probability...")
-                
-                progress_bar.progress(i * 33)
-                time.sleep(0.8)  # Shorter delay
-            
-            # Evaluate wish
-            label, score = evaluate_wish_sentiment(wish_prompt)
-            
-            if label == 'POSITIVE':
-                # Calculate base probability
-                base_probability = float(60.0 + (score * 20))
-                
-                # Generate wish ID and save
-                wish_id = generate_wish_id(wish_prompt)
-                wish_data = create_or_update_wish(wish_id, wish_prompt, base_probability)
-                
-                # Update session state
-                st.session_state.my_wish_text = wish_prompt
-                st.session_state.my_wish_probability = wish_data['current_probability']
-                st.session_state.wish_id = wish_id
-                st.session_state.show_wish_results = True
-                
-                # Show success and redirect
-                progress_bar.progress(100)
-                status_text.text("✅ Wish evaluated successfully!")
-                time.sleep(1)
-                st.rerun()
-            else:
-                # Show improvement tips
-                st.warning("### 🎄 Let's Make This Wish Even Better!")
-                st.markdown(f"""
-                **Your wish:** "{wish_prompt[:150]}..."
-                
-                **✨ Improvement Tips:**
-                1. **Start with positive words** like "I wish", "I hope", "I want"
-                2. **Be specific** about what you want to achieve
-                3. **Focus on positive outcomes** you desire
-                
-                **Example transformation:**
-                - Instead of: "I don't want to be stressed"
-                - Try: "I wish to find peace, balance, and reduce stress in 2026"
-                
-                **Try rewriting your wish with a positive focus!**
-                """)
-        else:
-            st.warning("📝 Please write your wish (at least 4 characters)")
-
-# ---------------------------
-# Show wish results
-# ---------------------------
-else:
-    # Get latest wish data
-    wish_data = get_wish_data(st.session_state.wish_id)
-    
-    if wish_data:
-        # Update with latest probability
-        current_prob = float(wish_data.get('current_probability', 0.0))
-        st.session_state.my_wish_probability = current_prob
-        supporters_count = len(wish_data.get('supporters', []))
-
-        # Display wish probability
-        st.markdown(f"""
-        <div class="probability-display">
-            <h2>✨ Your Wish Probability</h2>
-            <h1 style='font-size: 64px; margin: 20px 0;'>{current_prob:.1f}%</h1>
-            <p style='font-size: 18px;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck with you!</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.progress(current_prob / 100.0)
-
-        # Share section
-        st.markdown("---")
-        st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
-        st.markdown("The more friends who support your wish, the higher your probability!")
-        
-        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
-        
-        st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-        
-        # Action buttons
-        col1,col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔄 Check for Updates", use_container_width=True):
-                st.rerun()
-                
-    else:
-        st.error("❌ Wish data not found. Please create a new wish.")
-        if st.button("📝 Make New Wish", type="primary", use_container_width=True):
-            st.session_state.show_wish_results = False
-            st.session_state.my_wish_text = ""
-            st.session_state.wish_id = None
-            st.rerun()
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; padding: 5px; color: #666;'>
-    <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Add auto-refresh JavaScript for main page too
-if st.session_state.show_wish_results:
-    st.components.v1.html("""
-    <script>
-    // Auto-refresh every 30 seconds on wish results page
-    setTimeout(function() {
-        window.location.reload();
-    }, 30000);
-    </script>
-    """)
+            st.markdown(f'<div class="wish-quote compact-spacing">"{decoded_wish}"</div>', unsafe_allow_html=True)
