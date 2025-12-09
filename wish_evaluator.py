@@ -609,7 +609,7 @@ else:
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; padding: 5px; color: #666;'>
+<div style='text-align: center; padding: 2px; color: #666;'>
     <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
 </div>
 """, unsafe_allow_html=True)
