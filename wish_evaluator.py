@@ -363,9 +363,6 @@ check_and_refresh()
 if shared_wish_id:
     # Show refresh button
     col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("🔄 Refresh Page", use_container_width=True, key="refresh_main"):
-            st.rerun()
     
     # Show shared wish support section
     st.markdown("""
