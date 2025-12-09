@@ -26,6 +26,9 @@ if 'show_wish_results' not in st.session_state:
 if 'supporter_id' not in st.session_state:
     # Keep a stable supporter id per session
     st.session_state.supporter_id = f"supporter_{random.randint(1000, 9999)}_{int(time.time())}"
+# flag to force a reload after updates
+if 'force_reload' not in st.session_state:
+    st.session_state.force_reload = False
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
@@ -39,7 +42,6 @@ def load_wishes():
         if os.path.exists(WISHES_FILE):
             with open(WISHES_FILE, 'r') as f:
                 data = json.load(f)
-                # Ensure dict
                 return data if isinstance(data, dict) else {}
     except Exception as e:
         print("load_wishes error:", e)
@@ -133,7 +135,6 @@ def safe_decode_wish(encoded_wish):
     """Safely decode wish text from URL param."""
     try:
         decoded = urllib.parse.unquote_plus(encoded_wish)
-        # unquote_plus already converts + to spaces; keep as-is
         return decoded
     except Exception:
         try:
@@ -245,7 +246,6 @@ st.title("Christmas Wish 2026")
 # ---------------------------
 # Query params handling
 # ---------------------------
-# NOTE: st.query_params returns a dict of strings in this app.
 query_params = st.query_params
 shared_wish_id = query_params.get("wish_id", None)
 shared_wish_text = query_params.get("wish", None)
@@ -259,6 +259,11 @@ if prob_param:
         url_prob = max(0.0, min(99.9, float(cleaned)))
     except Exception:
         url_prob = None
+
+# If a forced reload flag is set, clear it (used to force UI to show fresh data)
+if st.session_state.get('force_reload', False):
+    st.session_state.force_reload = False
+    # no-op: clearing the flag is sufficient; subsequent loads will re-read from disk
 
 # ---------------------------
 # Shared-wish page (if any)
@@ -277,7 +282,7 @@ if shared_wish_id:
         if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
 
-    # Load wish from disk if present
+    # Load wish from disk (always re-read from disk here)
     wish_data = get_wish_data(shared_wish_id)
 
     # If wish exists on disk and URL provided a probability, synchronize if they differ
@@ -289,7 +294,6 @@ if shared_wish_id:
                 if shared_wish_id in wishes_data:
                     wishes_data[shared_wish_id]['current_probability'] = round(url_prob, 1)
                     wishes_data[shared_wish_id]['last_updated'] = time.time()
-                    # clamp
                     wishes_data[shared_wish_id]['current_probability'] = max(0.0, min(99.9, wishes_data[shared_wish_id]['current_probability']))
                     save_wishes(wishes_data)
                     wish_data = wishes_data.get(shared_wish_id)
@@ -328,6 +332,13 @@ if shared_wish_id:
                 st.session_state.supporter_id
             )
             if success:
+                # Immediately reload from disk to get the fresh record
+                reloaded = load_wishes().get(shared_wish_id)
+                if reloaded:
+                    # update session state so main page can use this value if the user navigates back
+                    st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
+                # set a flag to ensure next run uses fresh data
+                st.session_state.force_reload = True
                 with st.spinner("🎅 Sending your Christmas luck..."):
                     time.sleep(1)
                 st.balloons()
@@ -340,11 +351,8 @@ if shared_wish_id:
                 
                 *May your kindness return to you in 2026!*
                 """)
-                # refresh local state and rerun so UI updates
-                reloaded = load_wishes().get(shared_wish_id)
-                if reloaded:
-                    st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
-                st.rerun()
+                # rerun immediately so UI displays updated values
+                st.experimental_rerun()
             else:
                 st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
 
@@ -396,7 +404,9 @@ if not st.session_state.show_wish_results:
                         st.session_state.my_wish_probability = wish_data['current_probability']
                         st.session_state.wish_id = wish_id
                         st.session_state.show_wish_results = True
-                        st.rerun()
+                        # ensure fresh view on rerun
+                        st.session_state.force_reload = True
+                        st.experimental_rerun()
                     else:
                         st.warning("### 🎄 Let's Make This Wish Even Better!")
                         st.markdown(f"""
@@ -419,7 +429,8 @@ if not st.session_state.show_wish_results:
                     st.session_state.my_wish_probability = base_probability
                     st.session_state.wish_id = wish_id
                     st.session_state.show_wish_results = True
-                    st.rerun()
+                    st.session_state.force_reload = True
+                    st.experimental_rerun()
         else:
             st.warning("📝 Please write your wish (at least 4 characters)")
 
@@ -430,6 +441,7 @@ else:
     # Reload latest from disk for freshest values
     wish_data = load_wishes().get(st.session_state.wish_id)
     if wish_data:
+        # update session-state with freshest probability
         st.session_state.my_wish_probability = wish_data.get('current_probability', st.session_state.my_wish_probability)
         current_prob = float(st.session_state.my_wish_probability)
         supporters_count = len(wish_data.get('supporters', []))
@@ -449,17 +461,19 @@ else:
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
 
         if st.button("🔄 Fetch latest probability"):
+            # Force reload from disk and refresh UI
             reloaded = load_wishes().get(st.session_state.wish_id)
             if reloaded:
                 st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
-            st.rerun()
+            st.session_state.force_reload = True
+            st.experimental_rerun()
     else:
         st.error("Wish data not found. Please make a new wish.")
         if st.button("📝 Make New Wish", type="primary"):
             st.session_state.show_wish_results = False
             st.session_state.my_wish_text = ""
             st.session_state.wish_id = None
-            st.rerun()
+            st.experimental_rerun()
 
 # Footer
 st.markdown("---")
