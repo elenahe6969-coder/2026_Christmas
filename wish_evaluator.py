@@ -402,18 +402,6 @@ if shared_wish_id:
             """, unsafe_allow_html=True)
             st.session_state.last_seen_prob = current_prob
         
-        # Display probability
-        st.markdown(f"""
-        <div class="probability-display">
-            <h2 style='margin-bottom: 20px;'>🎯 Current Wish Probability</h2>
-            <h1 style='font-size: 72px; margin: 20px 0;'>{current_prob:.1f}%</h1>
-            <p style='font-size: 20px;'>🎅 Supported by <b>{supporters_count}</b> friend{'s' if supporters_count != 1 else ''}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Show progress bar
-        st.progress(current_prob / 100.0)
-        
         # Auto-refresh indicator
         next_refresh = 15 - (st.session_state.refresh_counter % 3) * 5
         
@@ -498,7 +486,7 @@ if not st.session_state.show_wish_results:
     st.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h2>✨ Hi there, Merry Christmas! 🎄</h2>
-        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate!</p>
+        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate the probability!</p>
     </div>
     """, unsafe_allow_html=True)
     
