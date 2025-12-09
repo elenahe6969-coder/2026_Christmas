@@ -498,7 +498,7 @@ if not st.session_state.show_wish_results:
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
 
-    if st.button("🎯 **Evaluate My Wish**", height=70, type="primary", use_container_width=True):
+    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_height=70, use_container_width=True):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             # Show evaluation progress
             progress_bar = st.progress(0)
