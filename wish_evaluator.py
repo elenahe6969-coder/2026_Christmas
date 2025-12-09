@@ -441,7 +441,7 @@ else:
         st.markdown(f"""
         <div class="probability-display">
             <h3>Your Wish Probability</h3>
-            <h1>{current_probabilitycurrent_prob:.1f}%</h1>
+            <h1>{current_prob:.1f}%</h1>
             <p>{supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
