@@ -502,8 +502,8 @@ if not st.session_state.show_wish_results:
     </div>
     """, unsafe_allow_html=True)
     
-    wish_prompt = st.text_area(
-        placeholder="🎅 Example: I wish to learn Spanish fluently in 2026...",
+    wish_prompt = st.text_area("🎅 What's your wish?",
+        placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
         height=120,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
