@@ -7,6 +7,34 @@ import json
 import os
 
 # ---------------------------
+# Compatibility helper
+# ---------------------------
+def safe_rerun():
+    """Try to rerun the Streamlit script in a compatibility-safe way."""
+    try:
+        # preferred (older + many current versions)
+        if hasattr(st, "experimental_rerun"):
+            st.experimental_rerun()
+            return
+    except Exception:
+        pass
+
+    try:
+        # newer API in some versions
+        if hasattr(st, "script_request_rerun"):
+            st.script_request_rerun()
+            return
+    except Exception:
+        pass
+
+    # final safe fallback: stop current run (session_state persists)
+    try:
+        st.stop()
+    except Exception:
+        # If even st.stop() fails (very unlikely), just return
+        return
+
+# ---------------------------
 # Session state initialization
 # ---------------------------
 if 'supported_wishes' not in st.session_state:
@@ -351,8 +379,8 @@ if shared_wish_id:
                 
                 *May your kindness return to you in 2026!*
                 """)
-                # rerun immediately so UI displays updated values
-                st.experimental_rerun()
+                # rerun immediately in a compatibility-safe way
+                safe_rerun()
             else:
                 st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
 
@@ -406,7 +434,7 @@ if not st.session_state.show_wish_results:
                         st.session_state.show_wish_results = True
                         # ensure fresh view on rerun
                         st.session_state.force_reload = True
-                        st.experimental_rerun()
+                        safe_rerun()
                     else:
                         st.warning("### 🎄 Let's Make This Wish Even Better!")
                         st.markdown(f"""
@@ -430,7 +458,7 @@ if not st.session_state.show_wish_results:
                     st.session_state.wish_id = wish_id
                     st.session_state.show_wish_results = True
                     st.session_state.force_reload = True
-                    st.experimental_rerun()
+                    safe_rerun()
         else:
             st.warning("📝 Please write your wish (at least 4 characters)")
 
@@ -466,14 +494,14 @@ else:
             if reloaded:
                 st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
             st.session_state.force_reload = True
-            st.experimental_rerun()
+            safe_rerun()
     else:
         st.error("Wish data not found. Please make a new wish.")
         if st.button("📝 Make New Wish", type="primary"):
             st.session_state.show_wish_results = False
             st.session_state.my_wish_text = ""
             st.session_state.wish_id = None
-            st.experimental_rerun()
+            safe_rerun()
 
 # Footer
 st.markdown("---")
