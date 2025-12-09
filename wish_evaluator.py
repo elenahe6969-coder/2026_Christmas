@@ -195,7 +195,7 @@ def evaluate_wish_sentiment(wish_text):
 # Page config & CSS
 # ---------------------------
 st.set_page_config(
-    page_title="🎄 Christmas Wish 2026",
+    page_title="Christmas Wish 2026",
     page_icon="🎄",
     layout="centered"
 )
