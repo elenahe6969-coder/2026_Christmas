@@ -7,7 +7,7 @@ import os
 import hashlib
 from datetime import datetime
 
-# ---------------------------s
+# ---------------------------
 # Session state initialization
 # ---------------------------
 if 'supported_wishes' not in st.session_state:
@@ -27,6 +27,13 @@ if 'last_refresh_time' not in st.session_state:
     st.session_state.last_refresh_time = time.time()
 if 'refresh_counter' not in st.session_state:
     st.session_state.refresh_counter = 0
+# NEW: Add session state for success message persistence
+if 'show_success_message' not in st.session_state:
+    st.session_state.show_success_message = False
+if 'success_data' not in st.session_state:
+    st.session_state.success_data = {}
+if 'success_timestamp' not in st.session_state:
+    st.session_state.success_timestamp = 0
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
@@ -289,10 +296,13 @@ st.markdown("""
     .success-message {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         color: white;
-        padding: 20px;
+        padding: 25px;
         border-radius: 15px;
-        margin: 20px 0;
+        margin: 25px 0;
+        text-align: center;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
         animation: fadeIn 0.5s;
+        border: 3px solid rgba(255,255,255,0.5);
     }
     .stProgress > div > div > div > div {
         background: linear-gradient(90deg, #4CAF50, #8BC34A);
@@ -305,6 +315,15 @@ st.markdown("""
     }
     h1, h2, h3 {
         color: #2c3e50;
+    }
+    .stale-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-size: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -331,6 +350,7 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
+
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -355,6 +375,25 @@ check_and_refresh()
 # Shared-wish page (if any)
 # ---------------------------
 if shared_wish_id:
+    # Clear success message if it's older than 10 seconds
+    if st.session_state.show_success_message:
+        if time.time() - st.session_state.success_timestamp > 10:
+            st.session_state.show_success_message = False
+    
+    # Show success message if it exists
+    if st.session_state.show_success_message and st.session_state.success_data:
+        increment = st.session_state.success_data.get('increment', 0)
+        new_probability = st.session_state.success_data.get('new_probability', 0)
+        
+        st.markdown(f"""
+        <div class="success-message">
+            <h3>🎄 Thank You!</h3>
+            <p style="font-size: 20px;">You added <b>+{increment}%</b> Christmas luck!</p>
+            <p style="font-size: 24px; margin: 15px 0;"><b>New Probability: {new_probability:.1f}%</b></p>
+            <p style="font-size: 16px;"><i>Your kindness will return to you in 2026! ✨</i></p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Show refresh button
     col1, col2, col3 = st.columns([1, 2, 1])
     
@@ -387,6 +426,7 @@ if shared_wish_id:
     if wish_data:
         current_prob = float(wish_data.get('current_probability', 0.0))
         supporters_count = len(wish_data.get('supporters', []))
+        last_updated = wish_data.get('last_updated', time.time())
         
         # Store last seen probability for comparison
         if 'last_seen_prob' not in st.session_state:
@@ -402,8 +442,30 @@ if shared_wish_id:
             """, unsafe_allow_html=True)
             st.session_state.last_seen_prob = current_prob
         
+        # Check if data is stale (older than 30 seconds)
+        if time.time() - last_updated > 30 and not st.session_state.show_success_message:
+            st.markdown('<div class="stale-warning">⚠️ Data may be stale. Refresh to see latest updates.</div>', unsafe_allow_html=True)
+        
+        # Display probability
+        st.markdown(f"""
+        <div class="probability-display">
+            <h3>Current Probability</h3>
+            <h1 style='font-size: 64px; margin: 10px 0;'>{current_prob:.1f}%</h1>
+            <p style='font-size: 20px;'>🎅 Supported by <b>{supporters_count}</b> friend{'s' if supporters_count != 1 else ''}</p>
+            <p style='font-size: 14px; opacity: 0.8;'>Last updated: {datetime.fromtimestamp(last_updated).strftime('%H:%M:%S')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Show progress bar
+        st.progress(current_prob / 100.0)
+        
         # Auto-refresh indicator
         next_refresh = 15 - (st.session_state.refresh_counter % 3) * 5
+        st.markdown(f"""
+        <div class="refresh-indicator">
+            🔄 Auto-refreshing in {next_refresh} seconds • Last checked: {datetime.now().strftime('%H:%M:%S')}
+        </div>
+        """, unsafe_allow_html=True)
         
     else:
         st.error("❌ Wish not found. The link might be invalid or expired.")
@@ -429,31 +491,39 @@ if shared_wish_id:
         )
         
         if success:
-            # Show success message
-            st.markdown(f"""
-            <div class="success-message">
-                <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> Christmas luck!</p>
-                <p><b>New Probability: {new_probability:.1f}%</b></p>
-                <p><i>Your kindness will return to you in 2026!</i></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.balloons()
+            # Store success data in session state
+            st.session_state.show_success_message = True
+            st.session_state.success_data = {
+                'increment': increment,
+                'new_probability': new_probability
+            }
+            st.session_state.success_timestamp = time.time()
             
             # Update session state
             st.session_state.last_seen_prob = new_probability
             
-            # Force immediate refresh after 3 seconds
-            time.sleep(3)
+            # Show balloons
+            st.balloons()
+            
+            # Don't use time.sleep() here - it blocks the UI
+            # Instead, immediately rerun to show updated probability and success message
             st.rerun()
         else:
             st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
     
+    # Add manual refresh button
+    if st.button("🔄 Refresh Now", key="refresh_now_btn", use_container_width=True):
+        # Clear success message on manual refresh
+        st.session_state.show_success_message = False
+        st.rerun()
+    
     # Make your own wish
     st.markdown("---")
     st.markdown("### 🎄 Ready to Make Your Own Wish?")
-    if st.button("✨ Create My Wish", use_container_width=True):
+    if st.button("✨ Create My Wish", use_container_width=True, key="create_my_wish_btn"):
+        # Clear session states
+        st.session_state.show_success_message = False
+        st.session_state.success_data = {}
         # Clear query params to go to main page
         st.query_params.clear()
         st.rerun()
@@ -613,12 +683,19 @@ else:
         col1,col2 = st.columns(2)
         
         with col1:
-            if st.button("🔄 Check for Updates", use_container_width=True):
+            if st.button("🔄 Check for Updates", use_container_width=True, key="check_updates_btn"):
+                st.rerun()
+        
+        with col2:
+            if st.button("✨ Make New Wish", use_container_width=True, key="new_wish_btn"):
+                st.session_state.show_wish_results = False
+                st.session_state.my_wish_text = ""
+                st.session_state.wish_id = None
                 st.rerun()
                 
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
-        if st.button("📝 Make New Wish", type="primary", use_container_width=True):
+        if st.button("📝 Make New Wish", type="primary", use_container_width=True, key="new_wish_error_btn"):
             st.session_state.show_wish_results = False
             st.session_state.my_wish_text = ""
             st.session_state.wish_id = None
