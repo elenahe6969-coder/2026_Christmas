@@ -7,7 +7,7 @@ import os
 import hashlib
 from datetime import datetime
 
-# ---------------------------
+# ---------------------------s
 # Session state initialization
 # ---------------------------
 if 'supported_wishes' not in st.session_state:
@@ -414,7 +414,6 @@ if shared_wish_id:
             <h2 style='margin-bottom: 20px;'>🎯 Current Wish Probability</h2>
             <h1 style='font-size: 72px; margin: 20px 0;'>{current_prob:.1f}%</h1>
             <p style='font-size: 20px;'>🎅 Supported by <b>{supporters_count}</b> friend{'s' if supporters_count != 1 else ''}</p>
-            <p style='font-size: 14px; opacity: 0.8;'>Last updated: {datetime.fromtimestamp(wish_data.get('last_updated', time.time())).strftime('%H:%M:%S')}</p>
         </div>
         """, unsafe_allow_html=True)
         
