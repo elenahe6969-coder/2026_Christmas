@@ -6,11 +6,13 @@ import random
 import json
 import os
 
-# Initialize session state
+# ---------------------------
+# Session state initialization
+# ---------------------------
 if 'supported_wishes' not in st.session_state:
     st.session_state.supported_wishes = {}
 if 'my_wish_probability' not in st.session_state:
-    st.session_state.my_wish_probability = 0
+    st.session_state.my_wish_probability = 0.0
 if 'my_wish_text' not in st.session_state:
     st.session_state.my_wish_text = ""
 if 'wish_id' not in st.session_state:
@@ -20,100 +22,155 @@ if 'support_clicks' not in st.session_state:
 if 'all_wishes' not in st.session_state:
     st.session_state.all_wishes = []
 if 'show_wish_results' not in st.session_state:
-    st.session_state.show_wish_results = False  # Track if we should show results
+    st.session_state.show_wish_results = False
+if 'supporter_id' not in st.session_state:
+    # Keep a stable supporter id per session
+    st.session_state.supporter_id = f"supporter_{random.randint(1000, 9999)}_{int(time.time())}"
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
 
-# Functions to manage shared wish data
+# ---------------------------
+# Storage helper functions
+# ---------------------------
 def load_wishes():
-    """Load wishes from file"""
+    """Load wishes from file (returns dict)."""
     try:
         if os.path.exists(WISHES_FILE):
             with open(WISHES_FILE, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Ensure dict
+                return data if isinstance(data, dict) else {}
     except Exception as e:
-        # Print server-side error for debugging (won't show to users)
         print("load_wishes error:", e)
     return {}
 
 def save_wishes(wishes_data):
-    """Save wishes to file"""
+    """Save wishes to file (returns True/False)."""
     try:
         with open(WISHES_FILE, 'w') as f:
-            json.dump(wishes_data, f)
+            json.dump(wishes_data, f, indent=2)
         return True
     except Exception as e:
         print("save_wishes error:", e)
         return False
 
-def update_wish_probability(wish_id, increment, supporter_id):
-    """Update wish probability in shared storage"""
-    wishes_data = load_wishes()
-    
-    if wish_id in wishes_data:
-        wish_data = wishes_data[wish_id]
-        
-        # Check if supporter already supported
-        if 'supporters' not in wish_data:
-            wish_data['supporters'] = []
-        
-        if supporter_id in wish_data['supporters']:
-            return False, wish_data['current_probability']
-        
-        # Add supporter
-        wish_data['supporters'].append(supporter_id)
-        
-        # Update probability (max 99.9%)
-        new_probability = min(99.9, wish_data['current_probability'] + increment)
-        wish_data['current_probability'] = new_probability
-        
-        if 'total_luck_added' not in wish_data:
-            wish_data['total_luck_added'] = 0
-        wish_data['total_luck_added'] += increment
-        
-        wish_data['last_updated'] = time.time()
-        
-        # Save back to file
-        save_wishes(wishes_data)
-        return True, new_probability
-    
-    return False, None
-
 def get_wish_data(wish_id):
-    """Get wish data from shared storage"""
     wishes_data = load_wishes()
     return wishes_data.get(wish_id)
 
 def create_or_update_wish(wish_id, wish_text, initial_probability):
-    """Create or update a wish in shared storage"""
+    """Create or update a wish in shared storage and return the wish dict."""
     wishes_data = load_wishes()
-    
+    now = time.time()
     if wish_id not in wishes_data:
         wishes_data[wish_id] = {
             'wish_text': wish_text,
-            'initial_probability': initial_probability,
-            'current_probability': initial_probability,
+            'initial_probability': float(initial_probability),
+            'current_probability': float(initial_probability),
             'supporters': [],
-            'total_luck_added': 0,
-            'created_at': time.time(),
-            'last_updated': time.time()
+            'total_luck_added': 0.0,
+            'created_at': now,
+            'last_updated': now
         }
     else:
-        # Update existing wish
+        # Update text & last_updated, keep existing current_probability unless overwritten elsewhere
         wishes_data[wish_id]['wish_text'] = wish_text
-        wishes_data[wish_id]['last_updated'] = time.time()
-    
+        wishes_data[wish_id]['last_updated'] = now
+
     save_wishes(wishes_data)
     return wishes_data[wish_id]
 
+def update_wish_probability(wish_id, increment, supporter_id):
+    """Update wish probability in shared storage (adds supporter if new)."""
+    wishes_data = load_wishes()
+    if wish_id in wishes_data:
+        wish_data = wishes_data[wish_id]
+        if 'supporters' not in wish_data:
+            wish_data['supporters'] = []
+        if supporter_id in wish_data['supporters']:
+            return False, wish_data.get('current_probability', 0.0)
+
+        wish_data['supporters'].append(supporter_id)
+        new_probability = min(99.9, float(wish_data.get('current_probability', 0.0)) + float(increment))
+        wish_data['current_probability'] = float(new_probability)
+        wish_data['total_luck_added'] = float(wish_data.get('total_luck_added', 0.0)) + float(increment)
+        wish_data['last_updated'] = time.time()
+        save_wishes(wishes_data)
+        return True, new_probability
+    return False, None
+
+# ---------------------------
+# Utilities
+# ---------------------------
+def get_random_increment():
+    return round(random.uniform(1.0, 10.0), 1)
+
+def generate_wish_id(wish_text):
+    import hashlib
+    unique_str = f"{wish_text}_{time.time()}"
+    return hashlib.md5(unique_str.encode()).hexdigest()[:10]
+
+def create_share_link(wish_id, wish_text):
+    """Create shareable link including current probability from session (if available)."""
+    # Put your actual deployed domain here
+    base_url = "https://2026christmas-yourwish-mywish-elena.streamlit.app"
+    short_wish = wish_text[:80]
+    clean_wish = short_wish.replace('\n', ' ').replace('\r', ' ').replace('"', "'").replace('  ', ' ')
+    encoded_wish = urllib.parse.quote_plus(clean_wish)
+
+    prob = ""
+    try:
+        prob_val = float(st.session_state.get('my_wish_probability', 0.0))
+        prob = f"&prob={prob_val:.1f}"
+    except Exception:
+        prob = ""
+
+    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}{prob}"
+    return full_url.strip()
+
+def safe_decode_wish(encoded_wish):
+    """Safely decode wish text from URL param."""
+    try:
+        decoded = urllib.parse.unquote_plus(encoded_wish)
+        # unquote_plus already converts + to spaces; keep as-is
+        return decoded
+    except Exception:
+        try:
+            return urllib.parse.unquote(encoded_wish)
+        except Exception:
+            return encoded_wish
+
+def evaluate_wish_sentiment(wish_text):
+    """Evaluate sentiment using transformers sentiment-analysis pipeline."""
+    try:
+        pipe = pipeline("sentiment-analysis")
+        result = pipe(wish_text[:512])[0]
+        st.session_state.all_wishes.append({
+            'text': wish_text[:100],
+            'label': result.get('label'),
+            'score': result.get('score')
+        })
+        has_wish_keyword = any(keyword in wish_text.lower() for keyword in ['wish', 'hope', 'want', 'dream'])
+        if result.get('label') == 'POSITIVE' and result.get('score', 0.0) > 0.6:
+            return 'POSITIVE', result.get('score', 0.0)
+        elif has_wish_keyword:
+            return 'POSITIVE', max(result.get('score', 0.0), 0.7)
+        else:
+            return result.get('label'), result.get('score', 0.0)
+    except Exception as e:
+        print(f"Model error: {e}")
+        return 'POSITIVE', 0.7
+
+# ---------------------------
+# Page config & CSS
+# ---------------------------
 st.set_page_config(
     page_title="🎄 Christmas Wish 2026",
     page_icon="🎄",
     layout="centered"
 )
 
-# Custom CSS
 st.markdown("""
 <style>
     .stButton > button {
@@ -180,159 +237,76 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Helper functions
-def get_random_increment():
-    return round(random.uniform(1.0, 10.0), 1)
-
-def generate_wish_id(wish_text):
-    import hashlib
-    unique_str = f"{wish_text}_{time.time()}"
-    return hashlib.md5(unique_str.encode()).hexdigest()[:10]
-
-def create_share_link(wish_id, wish_text):
-    """Create a shareable link that includes the current probability so shared view stays consistent."""
-    try:
-        base_url = "https://2026christmas-yourwish-mywish-elena.streamlit.app"
-    except:
-        base_url = "http://localhost:8501"
-    
-    short_wish = wish_text[:80]
-    clean_wish = short_wish.replace('\n', ' ').replace('\r', ' ').replace('"', "'").replace('  ', ' ')
-    encoded_wish = urllib.parse.quote_plus(clean_wish)
-
-    # include current probability if available in session_state (fallback to empty)
-    prob = ""
-    try:
-        prob_val = float(st.session_state.get('my_wish_probability', "")) if 'my_wish_probability' in st.session_state else ""
-        if prob_val != "":
-            prob = f"&prob={prob_val:.1f}"
-    except Exception:
-        prob = ""
-
-    full_url = f"{base_url}/?wish_id={wish_id}&wish={encoded_wish}{prob}"
-    return full_url.strip()
-
-def safe_decode_wish(encoded_wish):
-    """Safely decode wish text"""
-    try:
-        decoded = urllib.parse.unquote_plus(encoded_wish)
-        decoded = decoded.replace('+', ' ')
-        return decoded
-    except:
-        try:
-            decoded = urllib.parse.unquote(encoded_wish)
-            return decoded
-        except:
-            return encoded_wish
-
-def evaluate_wish_sentiment(wish_text):
-    """Custom function to evaluate wish sentiment"""
-    try:
-        pipe = pipeline("sentiment-analysis")
-        result = pipe(wish_text[:512])[0]
-        
-        st.session_state.all_wishes.append({
-            'text': wish_text[:100],
-            'label': result['label'],
-            'score': result['score']
-        })
-        
-        has_wish_keyword = any(keyword in wish_text.lower() for keyword in ['wish', 'hope', 'want', 'dream'])
-        
-        if result['label'] == 'POSITIVE' and result['score'] > 0.6:
-            return 'POSITIVE', result['score']
-        elif has_wish_keyword:
-            return 'POSITIVE', max(result['score'], 0.7)
-        else:
-            return result['label'], result['score']
-            
-    except Exception as e:
-        print(f"Model error: {e}")
-        return 'POSITIVE', 0.7
-
-
-# Main title at the TOP (always visible)
+# ---------------------------
+# Main title
+# ---------------------------
 st.title("Christmas Wish 2026")
 
-# Check for shared wish
+# ---------------------------
+# Query params handling
+# ---------------------------
+# NOTE: st.query_params returns a dict of strings in this app.
 query_params = st.query_params
-shared_wish_id = query_params.get("wish_id", [None])[0]
-shared_wish_text = query_params.get("wish", [None])[0]
+shared_wish_id = query_params.get("wish_id", None)
+shared_wish_text = query_params.get("wish", None)
+prob_param = query_params.get("prob", None)
 
-# If viewing a shared wish, show support page FIRST
+# Parse URL-provided probability if present
+url_prob = None
+if prob_param:
+    try:
+        cleaned = str(prob_param).strip().rstrip('%').replace(',', '')
+        url_prob = max(0.0, min(99.9, float(cleaned)))
+    except Exception:
+        url_prob = None
+
+# ---------------------------
+# Shared-wish page (if any)
+# ---------------------------
 if shared_wish_id:
-    # Generate unique supporter ID for this user
-    if 'supporter_id' not in st.session_state:
-        st.session_state.supporter_id = f"supporter_{random.randint(1000, 9999)}_{int(time.time())}"
-    
     # Show shared wish support section
     st.markdown("""
     **Message from your friend:**
     *"Merry Christmas! I just made a wish for 2026. 
     Please click the button below to share your Christmas luck and help make my wish come true!"*
     """)
-    
-    # Decode and show the wish
+
+    # Decode and show the wish text from URL (if provided)
     if shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
-        if decoded_wish and decoded_wish != shared_wish_text:
+        if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
-    
-# Get current wish data FROM SHARED STORAGE
+
+    # Load wish from disk if present
     wish_data = get_wish_data(shared_wish_id)
 
-    # Try to read probability from query params so shared page can enforce the same probability
-    prob_param = query_params.get("prob", [None])[0]
-    url_prob = None
-    if prob_param is not None:
-        try:
-            # allow values like "76.4" or "76" or "76.4%"
-            cleaned = str(prob_param).strip().rstrip('%').replace(',', '')
-            url_prob = max(0.0, min(99.9, float(cleaned)))
-        except Exception:
-            url_prob = None
-
-    # If wish exists but stored probability differs from the URL-provided probability,
-    # update the stored value so the shared-view matches the original view that created the link.
+    # If wish exists on disk and URL provided a probability, synchronize if they differ
     if wish_data and url_prob is not None:
-        stored_prob = float(wish_data.get('current_probability', 0.0))
-        # Only update when there's a meaningful difference (avoid noisy writes)
-        if abs(stored_prob - url_prob) > 0.05:
-            try:
+        try:
+            stored_prob = float(wish_data.get('current_probability', 0.0))
+            if abs(stored_prob - url_prob) > 0.05:
                 wishes_data = load_wishes()
-                # ensure wish record still exists in the loaded file
                 if shared_wish_id in wishes_data:
                     wishes_data[shared_wish_id]['current_probability'] = round(url_prob, 1)
                     wishes_data[shared_wish_id]['last_updated'] = time.time()
-                    # if someone previously added unrealistic values, clamp to sensible range
+                    # clamp
                     wishes_data[shared_wish_id]['current_probability'] = max(0.0, min(99.9, wishes_data[shared_wish_id]['current_probability']))
                     save_wishes(wishes_data)
-                    # reload wish_data from disk so UI shows fresh value
                     wish_data = wishes_data.get(shared_wish_id)
-            except Exception as e:
-                print("sync url_prob -> storage error:", e)
+        except Exception as e:
+            print("sync url_prob -> storage error:", e)
 
-    # If wish doesn't exist in storage, we'll create it later (existing logic handles that)
-    
-     # If wish doesn't exist in storage, create it from the URL data (use probability from URL if provided)
+    # If wish not on disk, create it using the URL-provided probability if available
     if not wish_data and shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
-            # Try to read probability from query params so shared page shows the same probability
-            try:
-                prob_param = query_params.get("prob", [None])[0]
-                initial_prob = float(prob_param) if prob_param is not None else 60.0
-            except Exception:
-                initial_prob = 60.0
-
-            # Create a temporary wish with the probability carried in the URL (prevents mismatch)
+            initial_prob = url_prob if url_prob is not None else 60.0
             wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
-    
-    # Show current probability
+
+    # Display current probability if we have wish_data now
     if wish_data:
-        current_prob = wish_data['current_probability']
+        current_prob = float(wish_data.get('current_probability', 0.0))
         supporters_count = len(wish_data.get('supporters', []))
-        
         st.markdown(f"""
         <div class="probability-display">
             <h3>Current Probability</h3>
@@ -340,24 +314,22 @@ if shared_wish_id:
             <p>Supported by {supporters_count} friend{'s' if supporters_count != 1 else ''} 🎄</p>
         </div>
         """, unsafe_allow_html=True)
-    
-    # Generate random increment
+    else:
+        st.error("Shared wish not found and no wish text provided in the URL.")
+
+    # Support button
     increment = get_random_increment()
-    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button(f"🍀 **Click to Add +{increment}% Christmas Luck**", type="primary", use_container_width=True):
-            # Add support and get updated probability FROM SHARED STORAGE
             success, new_probability = update_wish_probability(
-                shared_wish_id, 
+                shared_wish_id,
                 increment,
                 st.session_state.supporter_id
             )
-            
             if success:
                 with st.spinner("🎅 Sending your Christmas luck..."):
                     time.sleep(1)
-                
                 st.balloons()
                 st.success(f"""
                 **Thank you for sharing your Christmas luck! 🎄**
@@ -368,36 +340,32 @@ if shared_wish_id:
                 
                 *May your kindness return to you in 2026!*
                 """)
-                
-                # Update the display immediately: reload from disk and update session state, then rerun
+                # refresh local state and rerun so UI updates
                 reloaded = load_wishes().get(shared_wish_id)
                 if reloaded:
                     st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
                 st.rerun()
             else:
                 st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
-    
-    # Options for the supporter
+
+    # Options for the supporter / link to main app
     st.markdown("---")
-    # Show appropriate greeting based on whether viewing a shared wish
     st.markdown("### Your Turn to Make a Wish! 🎄")
     st.markdown("📝 https://2026wisheval-elena-python.streamlit.app/")
-    # Don't show the regular wish input when supporting
     st.stop()
 
-# Main app logic - Show wish input OR results
+# ---------------------------
+# Main app: create/evaluate wish
+# ---------------------------
 if not st.session_state.show_wish_results:
-    # Show wish input form
     st.markdown("### Hi there, Merry Christmas! 🎄")
-    
     wish_prompt = st.text_area(
         "🎅 Tell me your wish for 2026, and I'll assess how likely it is to come true:",
         placeholder="E.g., I wish to learn a new language in 2026...",
         key="wish_input",
         height=100
     )
-    
-    # Add tips for better wishes
+
     with st.expander("💡 Tips for better wishes"):
         st.markdown("""
         **Start your wish with:**
@@ -413,33 +381,22 @@ if not st.session_state.show_wish_results:
         - My dream is to travel around the world
         - I want to improve my health
         """)
-    
+
     if st.button("🎯 Evaluate My Wish", type="primary"):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             with st.spinner("🔮 The magic elves are evaluating your wish..."):
                 time.sleep(1.5)
-                
                 try:
                     label, score = evaluate_wish_sentiment(wish_prompt)
-                    
                     if label == 'POSITIVE':
-                        base_probability = 60.0 + (score * 20)
-                        
-                        # Generate wish ID
+                        base_probability = float(60.0 + (score * 20))
                         wish_id = generate_wish_id(wish_prompt)
-                        
-                        # Save wish to SHARED STORAGE
                         wish_data = create_or_update_wish(wish_id, wish_prompt, base_probability)
-                        
-                        # Save to session state
                         st.session_state.my_wish_text = wish_prompt
                         st.session_state.my_wish_probability = wish_data['current_probability']
                         st.session_state.wish_id = wish_id
                         st.session_state.show_wish_results = True
-                        
-                        # Rerun to show results
                         st.rerun()
-                        
                     else:
                         st.warning("### 🎄 Let's Make This Wish Even Better!")
                         st.markdown(f"""
@@ -452,39 +409,31 @@ if not st.session_state.show_wish_results:
                         
                         **Example:** Instead of "I don't want to be stressed", try "I wish to find peace and balance in 2026"
                         """)
-                                
                 except Exception as e:
-                    st.error(f"⚠️ Technical issue: {str(e)[:100]}")
-                    # Fallback
+                    st.error(f"⚠️ Technical issue: {str(e)[:200]}")
+                    # Fallback to a reasonable probability & continue
                     base_probability = 65.0
                     wish_id = generate_wish_id(wish_prompt)
-                    
-                    # Save wish to SHARED STORAGE
                     wish_data = create_or_update_wish(wish_id, wish_prompt, base_probability)
-                    
-                    # Save to session state
                     st.session_state.my_wish_text = wish_prompt
                     st.session_state.my_wish_probability = base_probability
                     st.session_state.wish_id = wish_id
                     st.session_state.show_wish_results = True
-                    
-                    # Rerun to show results
                     st.rerun()
         else:
             st.warning("📝 Please write your wish (at least 4 characters)")
 
-# Show wish results (when show_wish_results is True)
+# ---------------------------
+# Show wish results
+# ---------------------------
 else:
-    # ALWAYS reload latest from disk to show freshest values
+    # Reload latest from disk for freshest values
     wish_data = load_wishes().get(st.session_state.wish_id)
-    
     if wish_data:
-        # Sync latest probability into session state so UI shows fresh value
         st.session_state.my_wish_probability = wish_data.get('current_probability', st.session_state.my_wish_probability)
-        current_prob = st.session_state.my_wish_probability
+        current_prob = float(st.session_state.my_wish_probability)
         supporters_count = len(wish_data.get('supporters', []))
-        
-        # Display probability (from session_state which was just updated from disk)
+
         st.markdown(f"""
         <div class="probability-display">
             <h3>Your Wish Probability</h3>
@@ -492,24 +441,18 @@ else:
             <p>{supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
-        
+
         # Share section
         st.markdown("---")
         st.markdown("### 📤 Share with friends to get more Christmas luck!")
-        
         share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text)
-        
-        # Display the link
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-        
-        # Add a refresh button to explicitly fetch latest from disk
+
         if st.button("🔄 Fetch latest probability"):
             reloaded = load_wishes().get(st.session_state.wish_id)
             if reloaded:
                 st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
-            # use correct API to rerun
             st.rerun()
-    
     else:
         st.error("Wish data not found. Please make a new wish.")
         if st.button("📝 Make New Wish", type="primary"):
@@ -517,6 +460,7 @@ else:
             st.session_state.my_wish_text = ""
             st.session_state.wish_id = None
             st.rerun()
+
 # Footer
 st.markdown("---")
 st.markdown("Hope you will have fun with this app! - Yours, Elena")
