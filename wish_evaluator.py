@@ -325,7 +325,7 @@ if shared_wish_id:
                 # Update the display immediately: reload from disk and update session state, then rerun
                 reloaded = load_wishes().get(shared_wish_id)
                 if reloaded:
-                    st.session_state.my_wish_probability = reloaded.get('current_prob', st.session_state.my_wish_probability)
+                    st.session_state.my_wish_probability = reloaded.get('current_probability', st.session_state.my_wish_probability)
                 st.rerun()
             else:
                 st.info("🌟 You've already shared your Christmas luck for this wish! Thank you!")
