@@ -217,10 +217,7 @@ st.markdown("""
         font-weight: bold;
         font-size: 16px;
         transition: all 0.3s;
-        min-width: 250px !important;
-        width: auto !important;
-        display: inline-block !important;
-        margin: 0 auto !important;
+        width: 100% !important;  /* Make all buttons full width of their container */
     }
     .stButton > button:hover {
         background-color: #FF5252;
@@ -503,7 +500,7 @@ if not st.session_state.show_wish_results:
     )
     # Center the evaluate button
     st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=False):
+    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True, key="evaluate_wish"):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             # Show evaluation progress
             progress_bar = st.progress(0)
@@ -585,7 +582,7 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-        # Share section
+       # Share section
         st.markdown("---")
         st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
         st.markdown("The more friends who support your wish, the higher your probability!")
@@ -594,15 +591,23 @@ else:
         
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
         
-        # Action buttons with consistent width
-        st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-        if st.button("🔄 Check for Updates", type="primary", use_container_width=False):
+        # Action buttons - make Check for Updates button full width
+        if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Add some spacing
+        st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
+        
+        # Make New Wish button (full width like others)
+        if st.button("✨ Make New Wish", type="primary", use_container_width=True, key="new_wish_btn"):
+            st.session_state.show_wish_results = False
+            st.session_state.my_wish_text = ""
+            st.session_state.wish_id = None
+            st.rerun()
                 
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
-        if st.button("📝 Make New Wish", type="primary", use_container_width=True):
+        if st.button("📝 Make New Wish", type="primary", use_container_width=True, key="error_new_wish"):
             st.session_state.show_wish_results = False
             st.session_state.my_wish_text = ""
             st.session_state.wish_id = None
