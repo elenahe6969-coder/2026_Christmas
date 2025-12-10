@@ -218,8 +218,9 @@ st.markdown("""
         font-size: 16px;
         transition: all 0.3s;
         min-width: 250px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
+        width: auto !important;
+        display: inline-block !important;
+        margin: 0 auto !important;
     }
     .stButton > button:hover {
         background-color: #FF5252;
