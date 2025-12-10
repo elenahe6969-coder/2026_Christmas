@@ -445,10 +445,7 @@ if shared_wish_id:
             
             # Update session state
             st.session_state.last_seen_prob = new_probability
-            
-            # Force immediate refresh after 3 seconds
-            time.sleep(3)
-            st.rerun()
+
         else:
             st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
     
