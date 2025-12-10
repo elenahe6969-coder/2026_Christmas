@@ -1,4 +1,3 @@
-
 import streamlit as st
 import urllib.parse
 import time
@@ -7,20 +6,6 @@ import json
 import os
 import hashlib
 from datetime import datetime
-
-def generate_audio(text, filename_prefix="audio"):
-    """
-    Generate speech from text using gTTS and return path to MP3 file.
-    """
-    try:
-        tts = gTTS(text=text, lang="en")
-        # Save to a temporary file
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", prefix=filename_prefix)
-        tts.save(temp_file.name)
-        return temp_file.name
-    except Exception as e:
-        print("gTTS error:", e)
-        return None
 
 # ---------------------------s
 # Session state initialization
@@ -347,7 +332,6 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
-
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -380,12 +364,10 @@ if shared_wish_id:
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
     border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
+    <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
+    Please click the button below to share your luck and help make my wish come true!"</i></p>
     </div>
     """, unsafe_allow_html=True)
-        
-    audio_path = generate_audio("Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck!", wish_text)
-    if audio_path:
-      st.audio(audio_path)
 
     # Decode wish text
     decoded_wish = ""
@@ -393,15 +375,6 @@ if shared_wish_id:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
-
-            # Also attempt to generate audio for the decoded wish (on shared page)
-            try:
-                decoded_audio_bytes = generate_audio(decoded_wish)
-                if decoded_audio_bytes:
-                    st.markdown("### 🔊 Wish Audio")
-                    st.audio(decoded_audio_bytes, format="audio/mp3")
-            except Exception as e:
-                print("Shared wish audio generation failed:", e)
 
     # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
