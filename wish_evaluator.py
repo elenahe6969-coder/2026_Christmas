@@ -419,6 +419,9 @@ if shared_wish_id:
     button_key = f"support_button_{shared_wish_id}"
     
     st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+    # Force immediate refresh after 3 seconds
+    time.sleep(3)
+    st.rerun()
     if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
                  type="primary", 
                  use_container_width=True,
@@ -429,9 +432,6 @@ if shared_wish_id:
             increment,
             st.session_state.supporter_id
         )
-         # Force immediate refresh after 3 seconds
-        time.sleep(3)
-        st.rerun()
                      
         if success:
             # Show success message
