@@ -217,6 +217,9 @@ st.markdown("""
         font-weight: bold;
         font-size: 16px;
         transition: all 0.3s;
+        min-width: 250px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     .stButton > button:hover {
         background-color: #FF5252;
@@ -417,9 +420,10 @@ if shared_wish_id:
     # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
     
+    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
     if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
                  type="primary", 
-                 use_container_width=True,
+                 use_container_width=False,
                  key=button_key):
         
         success, new_probability = update_wish_probability(
@@ -496,8 +500,9 @@ if not st.session_state.show_wish_results:
         height=120,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
-
-    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True):
+    # Center the evaluate button
+    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=False):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             # Show evaluation progress
             progress_bar = st.progress(0)
@@ -588,12 +593,11 @@ else:
         
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
         
-        # Action buttons
-        col1,col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
-                st.rerun()
+        # Action buttons with consistent width
+        st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+        if st.button("🔄 Check for Updates", type="primary", use_container_width=False):
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
                 
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
