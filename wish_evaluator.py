@@ -355,8 +355,7 @@ check_and_refresh()
 # ---------------------------
 # Shared-wish page (if any)
 
-# Show shared wish support section
-st.markdown(f"### 🎅 Message from your friend:")
+
 # ---------------------------
 if shared_wish_id:
     # Show refresh button
@@ -365,7 +364,8 @@ if shared_wish_id:
 if shared_wish_id:
     import io
     from gtts import gTTS
-
+    # Show shared wish support section
+    st.markdown(f"### 🎅 Message from your friend:")
     # Show refresh button
     col1, col2, col3 = st.columns([1, 2, 1])
     
@@ -459,10 +459,7 @@ if shared_wish_id:
     # Make your own wish
     st.markdown("---")
     st.markdown("### 🎄 Ready to Make Your Own Wish?")
-    if st.button("✨ Create My Wish", use_container_width=True):
-        # Clear query params to go to main page
-        st.query_params.clear()
-        st.rerun()
+    st.markdown("https://2026christmas-yourwish-mywish-elena.streamlit.app/")
     
     # Add JavaScript for auto-refresh
     st.components.v1.html("""
