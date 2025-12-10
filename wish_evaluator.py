@@ -6,11 +6,6 @@ import json
 import os
 import hashlib
 from datetime import datetime
-
-# --- Text-to-audio imports and pipeline ---
-# NOTE: This uses the `transformers` pipeline for text-to-audio.
-# Make sure you have the necessary packages installed and the model available.
-# e.g. pip install transformers accelerate
 from transformers import pipeline
 
 # Load TTS model (suno/bark-small) — this may take a moment on first load.
@@ -22,8 +17,8 @@ except Exception as e:
     print("Warning: TTS pipeline failed to initialize:", e)
     tts = None
 
-def generate_audio(text, filename):
-    """Generate speech audio from text and save as MP3."""
+def generate_audio(text):
+    """Generate speech audio from text and return MP3 bytes (Streamlit-friendly)."""
     # If TTS is not available, return None
     if tts is None:
         print("TTS pipeline not available.")
@@ -31,44 +26,38 @@ def generate_audio(text, filename):
 
     try:
         audio_output = tts(text)
-        # audio_output might be:
-        # - a dict like {"audio": [b'...'], ...}
-        # - or bytes
         audio_bytes = None
 
+        # Case: dict-like output with "audio" key (list)
         if isinstance(audio_output, dict):
-            # try common keys
             if "audio" in audio_output and isinstance(audio_output["audio"], (list, tuple)) and len(audio_output["audio"]) > 0:
-                # element may be bytes or numpy array
                 candidate = audio_output["audio"][0]
-                if isinstance(candidate, bytes):
-                    audio_bytes = candidate
+                if isinstance(candidate, (bytes, bytearray)):
+                    audio_bytes = bytes(candidate)
                 else:
                     try:
-                        # try to convert numpy array to bytes (wav)
+                        # numpy array or similar
                         audio_bytes = candidate.tobytes()
                     except Exception:
                         audio_bytes = None
-            elif "wav" in audio_output:
-                candidate = audio_output["wav"]
-                if isinstance(candidate, bytes):
-                    audio_bytes = candidate
+            elif "wav" in audio_output and isinstance(audio_output["wav"], (bytes, bytearray)):
+                audio_bytes = bytes(audio_output["wav"])
+
+        # Case: raw bytes
         elif isinstance(audio_output, (bytes, bytearray)):
             audio_bytes = bytes(audio_output)
 
+        # Fallback: try to coerce to bytes
         if audio_bytes is None:
-            # fallback: try to stringify
             try:
                 audio_bytes = bytes(audio_output)
             except Exception:
-                print("Unable to extract bytes from TTS output:", type(audio_output))
+                print("Unable to extract audio bytes from TTS output:", type(audio_output))
                 return None
 
-        # Write to file
-        audio_path = f"{filename}.mp3"
-        with open(audio_path, "wb") as f:
-            f.write(audio_bytes)
-        return audio_path
+        # Return raw MP3/WAV bytes to be consumed by st.audio
+        return audio_bytes
+
     except Exception as e:
         print("TTS error:", e)
         return None
@@ -442,10 +431,10 @@ if shared_wish_id:
         "Please click the button below to share your luck and help make my wish come true!"
     )
     try:
-        friend_audio_path = generate_audio(friend_message, "friend_message_audio")
-        if friend_audio_path:
+        friend_audio_bytes = generate_audio(friend_message)
+        if friend_audio_bytes:
             st.markdown("### 🔊 Message Audio")
-            st.audio(friend_audio_path)
+            st.audio(friend_audio_bytes, format="audio/mp3")
     except Exception as e:
         # Fail silently in UI but print for debugging
         print("Friend audio generation failed:", e)
@@ -459,10 +448,10 @@ if shared_wish_id:
 
             # Also attempt to generate audio for the decoded wish (on shared page)
             try:
-                decoded_audio_path = generate_audio(decoded_wish, f"shared_wish_{shared_wish_id}_audio")
-                if decoded_audio_path:
+                decoded_audio_bytes = generate_audio(decoded_wish)
+                if decoded_audio_bytes:
                     st.markdown("### 🔊 Wish Audio")
-                    st.audio(decoded_audio_path)
+                    st.audio(decoded_audio_bytes, format="audio/mp3")
             except Exception as e:
                 print("Shared wish audio generation failed:", e)
 
