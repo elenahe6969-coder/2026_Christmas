@@ -628,17 +628,6 @@ else:
         # Action buttons - make Check for Updates button full width
         if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
             st.rerun()
-        
-        # Add some spacing
-        st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
-        
-        # Make New Wish button (full width like others)
-        if st.button("✨ Make New Wish", type="primary", use_container_width=True, key="new_wish_btn"):
-            st.session_state.show_wish_results = False
-            st.session_state.my_wish_text = ""
-            st.session_state.wish_id = None
-            st.rerun()
-                
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
         if st.button("📝 Make New Wish", type="primary", use_container_width=True, key="error_new_wish"):
