@@ -217,10 +217,6 @@ st.markdown("""
         font-weight: bold;
         font-size: 16px;
         transition: all 0.3s;
-        min-width: 220px !important;
-        max-width: 300px !important;
-        margin: 0 auto !important;
-        display: block !important;
     }
     .stButton > button:hover {
         background-color: #FF5252;
@@ -584,17 +580,20 @@ else:
         """, unsafe_allow_html=True)
 
         # Share section
-        col1, col2 = st.columns([3, 2])
+        st.markdown("---")
+        st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
+        st.markdown("The more friends who support your wish, the higher your probability!")
+        
+        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
+        
+        st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
+        
+        # Action buttons
+        col1,col2 = st.columns(2)
+        
         with col1:
-            st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
-            st.markdown("The more friends who support your wish, the higher your probability!")
-        with col2:
-            # Button container for perfect alignment
-            st.markdown('<div style="height: 68px; display: flex; align-items: center;">', unsafe_allow_html=True)
-            if st.button("🔄 Check for Updates", key="aligned_check_updates", 
-                        use_container_width=True):
+            if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
                 
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
