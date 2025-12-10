@@ -584,7 +584,7 @@ else:
         """, unsafe_allow_html=True)
 
         # Share section
-               col1, col2 = st.columns([3, 2])
+        col1, col2 = st.columns([3, 2])
         with col1:
             st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
             st.markdown("The more friends who support your wish, the higher your probability!")
