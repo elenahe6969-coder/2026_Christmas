@@ -356,12 +356,7 @@ check_and_refresh()
 # Shared-wish page (if any)
 
 # Show shared wish support section
-st.markdown("""
-    <div style='text-align: center; padding: 20px; 
-    <h3>🎅 Message from your friend:</h3>
-    </div>
-    """)
-
+st.markdown(f"### 🎅 Message from your friend:")
 # ---------------------------
 if shared_wish_id:
     # Show refresh button
