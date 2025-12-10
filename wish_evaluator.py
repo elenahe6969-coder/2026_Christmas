@@ -6,6 +6,7 @@ import json
 import os
 import hashlib
 from datetime import datetime
+import tempfile
 
 # ---------------------------s
 # Session state initialization
@@ -373,13 +374,13 @@ if shared_wish_id:
     shared_message = "Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck and help make my wish come true!"
 
     # Convert message to audio
+    # Generate audio using gTTS
     tts = gTTS(text=shared_message, lang='en')
-    audio_bytes = io.BytesIO()
-    tts.write_to_fp(audio_bytes)
-    audio_bytes.seek(0)
-    
-    # Display audio player
-    st.audio(audio_bytes, format='audio/mp3')
+
+   # Save to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+    tts.write_to_fp(tmp_file)
+    tmp_file_path = tmp_file.name
 
     # Decode wish text
     decoded_wish = ""
