@@ -6,11 +6,8 @@ import json
 import os
 import hashlib
 from datetime import datetime
-import base64
-from gtts import gTTS
-import tempfile
 
-# ---------------------------s
+# ---------------------------
 # Session state initialization
 # ---------------------------
 if 'supported_wishes' not in st.session_state:
@@ -33,50 +30,6 @@ if 'refresh_counter' not in st.session_state:
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
-
-# ---------------------------
-# Audio helper function
-# ---------------------------
-def create_audio_from_text(text, lang='en'):
-    """Convert text to speech and return HTML audio player."""
-    try:
-        # Create text-to-speech
-        tts = gTTS(text=text, lang=lang, slow=False)
-        
-        # Save to temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
-            temp_file = fp.name
-            tts.save(temp_file)
-        
-        # Read the file and encode to base64
-        with open(temp_file, 'rb') as audio_file:
-            audio_bytes = audio_file.read()
-            audio_base64 = base64.b64encode(audio_bytes).decode()
-        
-        # Clean up temp file
-        os.unlink(temp_file)
-        
-        # Create HTML audio player
-        audio_html = f'''
-        <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4CAF50;">
-            <p style="margin: 0 0 10px 0; font-weight: bold; color: #2c3e50;">🎵 Audio Playback:</p>
-            <audio controls style="width: 100%;">
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                Your browser does not support the audio element.
-            </audio>
-            <p style="margin: 8px 0 0 0; font-size: 12px; color: #666;">Click play to listen 🔊</p>
-        </div>
-        '''
-        return audio_html
-    except Exception as e:
-        print(f"Audio generation error: {e}")
-        # Return a simple audio placeholder if gTTS fails
-        return '''
-        <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #ff9800;">
-            <p style="margin: 0 0 10px 0; font-weight: bold; color: #2c3e50;">🔇 Audio temporarily unavailable</p>
-            <p style="margin: 0; font-size: 14px; color: #666;">Please read the text message above.</p>
-        </div>
-        '''
 
 # ---------------------------
 # Storage helper functions
@@ -264,7 +217,7 @@ st.markdown("""
         font-weight: bold;
         font-size: 16px;
         transition: all 0.3s;
-        width: 100% !important;  /* Make all buttons full width of their container */
+        width: 100% !important;
     }
     .stButton > button:hover {
         background-color: #FF5252;
@@ -326,14 +279,6 @@ st.markdown("""
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-    .pulse {
-        animation: pulse 2s infinite;
-    }
     .success-message {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         color: white;
@@ -351,12 +296,25 @@ st.markdown("""
     h1, h2, h3 {
         color: #2c3e50;
     }
-    .audio-container {
+    .audio-section {
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         border-radius: 12px;
         padding: 20px;
         margin: 20px 0;
         border-left: 5px solid #2196F3;
+    }
+    .audio-placeholder {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+        margin: 10px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .audio-icon {
+        font-size: 24px;
+        margin-right: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -383,6 +341,7 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
+
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -413,7 +372,7 @@ if shared_wish_id:
         if st.button("🔄 Refresh Page", use_container_width=True, key="shared_refresh_top"):
             st.rerun()
     
-    # Show shared wish support section with audio
+    # Show shared wish support section with audio visual
     friend_message = """Merry Christmas! I just made a wish for 2026. 
     Please click the button below to share your Christmas luck and help make my wish come true!"""
     
@@ -425,13 +384,20 @@ if shared_wish_id:
     </div>
     """, unsafe_allow_html=True)
     
-    # Add audio player for friend's message
-    st.markdown("### 🔊 Listen to the message:")
-    friend_audio = create_audio_from_text(friend_message)
-    if friend_audio:
-        st.markdown(friend_audio, unsafe_allow_html=True)
-    else:
-        st.info("Audio playback not available. Please read the message above.")
+    # Audio visual placeholder for friend's message
+    st.markdown("""
+    <div class="audio-section">
+        <h4>🔊 Audio Message from Friend</h4>
+        <div class="audio-placeholder">
+            <div class="audio-icon">🔊</div>
+            <div>
+                <p style="margin: 0; font-weight: bold;">Friend's Christmas Message</p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">"Merry Christmas! I just made a wish for 2026..."</p>
+                <p style="margin: 8px 0 0 0; font-size: 12px; color: #888;">Audio feature coming soon!</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Decode wish text
     decoded_wish = ""
@@ -440,13 +406,20 @@ if shared_wish_id:
         if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
             
-            # Add audio player for the wish
-            st.markdown("### 🔊 Listen to the wish:")
-            wish_audio = create_audio_from_text(f'My wish is: {decoded_wish}')
-            if wish_audio:
-                st.markdown(wish_audio, unsafe_allow_html=True)
-            else:
-                st.info("Wish audio playback not available.")
+            # Audio visual placeholder for the wish
+            st.markdown("""
+            <div class="audio-section">
+                <h4>🔊 Audio of the Wish</h4>
+                <div class="audio-placeholder">
+                    <div class="audio-icon">🎵</div>
+                    <div>
+                        <p style="margin: 0; font-weight: bold;">The Wish</p>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">"{decoded_wish[:80]}..."</p>
+                        <p style="margin: 8px 0 0 0; font-size: 12px; color: #888;">Audio playback feature coming soon!</p>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
