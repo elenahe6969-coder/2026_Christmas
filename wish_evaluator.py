@@ -1,3 +1,5 @@
+pip install gTTS
+
 import streamlit as st
 import urllib.parse
 import time
@@ -7,6 +9,7 @@ import os
 import hashlib
 from datetime import datetime
 from transformers import pipeline
+
 
 # Load TTS model (suno/bark-small) — this may take a moment on first load.
 # If you want to prevent reloading on every rerun, consider st.cache_resource in future.
