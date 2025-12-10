@@ -308,7 +308,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-    /* Slimmer buttons for better alignment */
+/* Slimmer buttons for better alignment */
     .stButton > button {
         padding: 8px 20px !important;
         min-height: 44px !important;
