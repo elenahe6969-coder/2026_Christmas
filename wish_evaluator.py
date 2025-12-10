@@ -435,8 +435,7 @@ if shared_wish_id:
             st.markdown(f"""
             <div class="success-message">
                 <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> luck to your friend's wish!</p>
-                <p><i>Your kindness will return to you in 2026!</i></p>
+                <p>You added <b>+{increment}%</b> luck to your friend's wish! Your kindness will return to you in 2026!</p>
             </div>
             """, unsafe_allow_html=True)
             
