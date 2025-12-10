@@ -8,61 +8,19 @@ import json
 import os
 import hashlib
 from datetime import datetime
-from transformers import pipeline
 
-
-# Load TTS model (suno/bark-small) — this may take a moment on first load.
-# If you want to prevent reloading on every rerun, consider st.cache_resource in future.
-try:
-    tts = pipeline("text-to-audio", model="suno/bark-small")
-except Exception as e:
-    # If model load fails, keep `tts` as None and handle gracefully below.
-    print("Warning: TTS pipeline failed to initialize:", e)
-    tts = None
-
-def generate_audio(text):
-    """Generate speech audio from text and return MP3 bytes (Streamlit-friendly)."""
-    # If TTS is not available, return None
-    if tts is None:
-        print("TTS pipeline not available.")
-        return None
-
+def generate_audio(text, filename_prefix="audio"):
+    """
+    Generate speech from text using gTTS and return path to MP3 file.
+    """
     try:
-        audio_output = tts(text)
-        audio_bytes = None
-
-        # Case: dict-like output with "audio" key (list)
-        if isinstance(audio_output, dict):
-            if "audio" in audio_output and isinstance(audio_output["audio"], (list, tuple)) and len(audio_output["audio"]) > 0:
-                candidate = audio_output["audio"][0]
-                if isinstance(candidate, (bytes, bytearray)):
-                    audio_bytes = bytes(candidate)
-                else:
-                    try:
-                        # numpy array or similar
-                        audio_bytes = candidate.tobytes()
-                    except Exception:
-                        audio_bytes = None
-            elif "wav" in audio_output and isinstance(audio_output["wav"], (bytes, bytearray)):
-                audio_bytes = bytes(audio_output["wav"])
-
-        # Case: raw bytes
-        elif isinstance(audio_output, (bytes, bytearray)):
-            audio_bytes = bytes(audio_output)
-
-        # Fallback: try to coerce to bytes
-        if audio_bytes is None:
-            try:
-                audio_bytes = bytes(audio_output)
-            except Exception:
-                print("Unable to extract audio bytes from TTS output:", type(audio_output))
-                return None
-
-        # Return raw MP3/WAV bytes to be consumed by st.audio
-        return audio_bytes
-
+        tts = gTTS(text=text, lang="en")
+        # Save to a temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", prefix=filename_prefix)
+        tts.save(temp_file.name)
+        return temp_file.name
     except Exception as e:
-        print("TTS error:", e)
+        print("gTTS error:", e)
         return None
 
 # ---------------------------s
@@ -423,24 +381,15 @@ if shared_wish_id:
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
     border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
-    <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
-    Please click the button below to share your luck and help make my wish come true!"</i></p>
     </div>
     """, unsafe_allow_html=True)
 
     # --- Text-to-audio for friend message (Option A) ---
     friend_message = (
-        "Merry Christmas! I just made a wish for 2026. "
-        "Please click the button below to share your luck and help make my wish come true!"
-    )
-    try:
-        friend_audio_bytes = generate_audio(friend_message)
-        if friend_audio_bytes:
-            st.markdown("### 🔊 Message Audio")
-            st.audio(friend_audio_bytes, format="audio/mp3")
-    except Exception as e:
-        # Fail silently in UI but print for debugging
-        print("Friend audio generation failed:", e)
+        
+    audio_path = generate_audio("Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck!", wish_text)
+    if audio_path:
+      st.audio(audio_path)
 
     # Decode wish text
     decoded_wish = ""
