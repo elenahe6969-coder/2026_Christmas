@@ -377,10 +377,13 @@ if shared_wish_id:
     # Generate audio using gTTS
     tts = gTTS(text=shared_message, lang='en')
 
-   # Save to a temporary file
+    # Save to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-    tts.write_to_fp(tmp_file)
-    tmp_file_path = tmp_file.name
+        tts.write_to_fp(tmp_file)
+        tmp_file_path = tmp_file.name
+
+    # Display audio player
+    st.audio(tmp_file_path, format="audio/mp3")
 
     # Decode wish text
     decoded_wish = ""
