@@ -571,20 +571,20 @@ else:
 
         # Share section
         st.markdown("---")
-        st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
-        st.markdown("The more friends who support your wish, the higher your probability!")
         
-        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
-        
-        st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-        
-        # Action buttons
-        col1,col2 = st.columns(2)
-        
+        # First row: Text and Check for Updates button
+        col1, col2 = st.columns([3, 1])
         with col1:
+            st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
+            st.markdown("The more friends who support your wish, the higher your probability!")
+        with col2:
             if st.button("🔄 Check for Updates", use_container_width=True):
                 st.rerun()
-                
+        
+        # Share link box
+        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
+        st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
+                 
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
         if st.button("📝 Make New Wish", type="primary", use_container_width=True):
