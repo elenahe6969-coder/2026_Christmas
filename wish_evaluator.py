@@ -578,8 +578,6 @@ else:
             <p style='font-size: 18px; margin: 5px 0;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.progress(current_prob / 100.0)
 
         # Share section
         st.markdown("---")
