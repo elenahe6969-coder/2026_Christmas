@@ -424,14 +424,11 @@ if shared_wish_id:
     # Support button
     increment = get_random_increment()
     
-    st.markdown("---")
-    st.markdown(f"### ✨ Add Your Luck!")
-    
     # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
     
     st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-    if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
+    if st.button(f"✨ Add Your Luck! (+{increment}%)", 
                  type="primary", 
                  use_container_width=True,
                  key=button_key):
