@@ -382,9 +382,6 @@ if shared_wish_id:
     <h3>🎅 Message from your friend:</h3>
     </div>
     """, unsafe_allow_html=True)
-
-    # --- Text-to-audio for friend message (Option A) ---
-    friend_message = (
         
     audio_path = generate_audio("Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck!", wish_text)
     if audio_path:
