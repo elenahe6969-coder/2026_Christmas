@@ -6,6 +6,9 @@ import json
 import os
 import hashlib
 from datetime import datetime
+import base64
+from gtts import gTTS
+import tempfile
 
 # ---------------------------s
 # Session state initialization
@@ -30,6 +33,50 @@ if 'refresh_counter' not in st.session_state:
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
+
+# ---------------------------
+# Audio helper function
+# ---------------------------
+def create_audio_from_text(text, lang='en'):
+    """Convert text to speech and return HTML audio player."""
+    try:
+        # Create text-to-speech
+        tts = gTTS(text=text, lang=lang, slow=False)
+        
+        # Save to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
+            temp_file = fp.name
+            tts.save(temp_file)
+        
+        # Read the file and encode to base64
+        with open(temp_file, 'rb') as audio_file:
+            audio_bytes = audio_file.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode()
+        
+        # Clean up temp file
+        os.unlink(temp_file)
+        
+        # Create HTML audio player
+        audio_html = f'''
+        <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4CAF50;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; color: #2c3e50;">🎵 Audio Playback:</p>
+            <audio controls style="width: 100%;">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #666;">Click play to listen 🔊</p>
+        </div>
+        '''
+        return audio_html
+    except Exception as e:
+        print(f"Audio generation error: {e}")
+        # Return a simple audio placeholder if gTTS fails
+        return '''
+        <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #ff9800;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; color: #2c3e50;">🔇 Audio temporarily unavailable</p>
+            <p style="margin: 0; font-size: 14px; color: #666;">Please read the text message above.</p>
+        </div>
+        '''
 
 # ---------------------------
 # Storage helper functions
@@ -295,9 +342,6 @@ st.markdown("""
         margin: 20px 0;
         animation: fadeIn 0.5s;
     }
-    .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, #4CAF50, #8BC34A);
-    }
     .stTextArea textarea {
         border-radius: 10px;
         border: 2px solid #dee2e6;
@@ -306,6 +350,13 @@ st.markdown("""
     }
     h1, h2, h3 {
         color: #2c3e50;
+    }
+    .audio-container {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+        border-left: 5px solid #2196F3;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -356,18 +407,31 @@ check_and_refresh()
 # Shared-wish page (if any)
 # ---------------------------
 if shared_wish_id:
-    # Show refresh button
+    # Show refresh button at top (centered)
     col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔄 Refresh Page", use_container_width=True, key="shared_refresh_top"):
+            st.rerun()
     
-    # Show shared wish support section
+    # Show shared wish support section with audio
+    friend_message = """Merry Christmas! I just made a wish for 2026. 
+    Please click the button below to share your Christmas luck and help make my wish come true!"""
+    
     st.markdown("""
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
     border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
-    <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
-    Please click the button below to share your Christmas luck and help make my wish come true!"</i></p>
+    <p style='font-size: 18px; margin-bottom: 15px;'><i>"{friend_message}"</i></p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Add audio player for friend's message
+    st.markdown("### 🔊 Listen to the message:")
+    friend_audio = create_audio_from_text(friend_message)
+    if friend_audio:
+        st.markdown(friend_audio, unsafe_allow_html=True)
+    else:
+        st.info("Audio playback not available. Please read the message above.")
 
     # Decode wish text
     decoded_wish = ""
@@ -375,6 +439,14 @@ if shared_wish_id:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
             st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
+            
+            # Add audio player for the wish
+            st.markdown("### 🔊 Listen to the wish:")
+            wish_audio = create_audio_from_text(f'My wish is: {decoded_wish}')
+            if wish_audio:
+                st.markdown(wish_audio, unsafe_allow_html=True)
+            else:
+                st.info("Wish audio playback not available.")
 
     # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
@@ -418,47 +490,53 @@ if shared_wish_id:
     # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
     
-    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-    if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
-                 type="primary", 
-                 use_container_width=True,
-                 key=button_key):
-        
-        success, new_probability = update_wish_probability(
-            shared_wish_id,
-            increment,
-            st.session_state.supporter_id
-        )
-        
-        if success:
-            # Show success message
-            st.markdown(f"""
-            <div class="success-message">
-                <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> Christmas luck!</p>
-                <p><b>New Probability: {new_probability:.1f}%</b></p>
-                <p><i>Your kindness will return to you in 2026!</i></p>
-            </div>
-            """, unsafe_allow_html=True)
+    # Center the support button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button(f"🌟 I believe in this wish! (+{increment}%)", 
+                     type="primary", 
+                     use_container_width=True,
+                     key=button_key):
             
-            st.balloons()
+            success, new_probability = update_wish_probability(
+                shared_wish_id,
+                increment,
+                st.session_state.supporter_id
+            )
             
-            # Update session state
-            st.session_state.last_seen_prob = new_probability
-            
-            # Force immediate refresh after 3 seconds
-            time.sleep(3)
-            st.rerun()
-        else:
-            st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
+            if success:
+                # Show success message
+                st.markdown(f"""
+                <div class="success-message">
+                    <h3>🎄 Thank You!</h3>
+                    <p>You added <b>+{increment}%</b> Christmas luck!</p>
+                    <p><b>New Probability: {new_probability:.1f}%</b></p>
+                    <p><i>Your kindness will return to you in 2026!</i></p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.balloons()
+                
+                # Update session state
+                st.session_state.last_seen_prob = new_probability
+                
+                # Force immediate refresh after 3 seconds
+                time.sleep(3)
+                st.rerun()
+            else:
+                st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
     
     # Make your own wish
     st.markdown("---")
     st.markdown("### 🎄 Ready to Make Your Own Wish?")
-    if st.button("✨ Create My Wish", use_container_width=True):
-        # Clear query params to go to main page
-        st.query_params.clear()
-        st.rerun()
+    
+    # Center the Create My Wish button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("✨ Create My Wish", use_container_width=True, key="shared_create_wish"):
+            # Clear query params to go to main page
+            st.query_params.clear()
+            st.rerun()
     
     # Add JavaScript for auto-refresh
     st.components.v1.html("""
@@ -498,25 +576,12 @@ if not st.session_state.show_wish_results:
         height=120,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
-    # Center the evaluate button
-    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+
     if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True, key="evaluate_wish"):
         if wish_prompt and len(wish_prompt.strip()) > 3:
             # Show evaluation progress
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            # Simulate evaluation steps
-            for i in range(1, 4):
-                if i == 1:
-                    status_text.text("🔮 Reading your wish...")
-                elif i == 2:
-                    status_text.text("🎄 Consulting the Christmas elves...")
-                elif i == 3:
-                    status_text.text("✨ Calculating probability...")
-                
-                progress_bar.progress(i * 33)
-                time.sleep(0.8)  # Shorter delay
+            with st.spinner("🔮 Evaluating your wish..."):
+                time.sleep(2)
             
             # Evaluate wish
             label, score = evaluate_wish_sentiment(wish_prompt)
@@ -536,8 +601,7 @@ if not st.session_state.show_wish_results:
                 st.session_state.show_wish_results = True
                 
                 # Show success and redirect
-                progress_bar.progress(100)
-                status_text.text("✅ Wish evaluated successfully!")
+                st.success("✅ Wish evaluated successfully!")
                 time.sleep(1)
                 st.rerun()
             else:
@@ -582,7 +646,7 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-       # Share section
+        # Share section
         st.markdown("---")
         st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
         st.markdown("The more friends who support your wish, the higher your probability!")
@@ -593,6 +657,16 @@ else:
         
         # Action buttons - make Check for Updates button full width
         if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
+            st.rerun()
+        
+        # Add some spacing
+        st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
+        
+        # Make New Wish button (full width like others)
+        if st.button("✨ Make New Wish", type="primary", use_container_width=True, key="new_wish_btn"):
+            st.session_state.show_wish_results = False
+            st.session_state.my_wish_text = ""
+            st.session_state.wish_id = None
             st.rerun()
                 
     else:
