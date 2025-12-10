@@ -429,7 +429,10 @@ if shared_wish_id:
             increment,
             st.session_state.supporter_id
         )
-        
+         # Force immediate refresh after 3 seconds
+             time.sleep(3)
+             st.rerun()
+                     
         if success:
             # Show success message
             st.markdown(f"""
