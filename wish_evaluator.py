@@ -359,15 +359,24 @@ if shared_wish_id:
     # Show refresh button
     col1, col2, col3 = st.columns([1, 2, 1])
     
-    # Show shared wish support section
-    st.markdown("""
-    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
-    border-radius: 15px; margin: 20px 0;'>
-    <h3>🎅 Message from your friend:</h3>
-    <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
-    Please click the button below to share your luck and help make my wish come true!"</i></p>
-    </div>
-    """, unsafe_allow_html=True)
+if shared_wish_id:
+    import io
+    from gtts import gTTS
+
+    # Show refresh button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    # Text message
+    shared_message = "Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck and help make my wish come true!"
+
+    # Convert message to audio
+    tts = gTTS(text=shared_message, lang='en')
+    audio_bytes = io.BytesIO()
+    tts.write_to_fp(audio_bytes)
+    audio_bytes.seek(0)
+    
+    # Display audio player
+    st.audio(audio_bytes, format='audio/mp3')
 
     # Decode wish text
     decoded_wish = ""
