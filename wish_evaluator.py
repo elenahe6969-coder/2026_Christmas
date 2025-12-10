@@ -1,4 +1,3 @@
-
 import streamlit as st
 import urllib.parse
 import time
@@ -295,7 +294,9 @@ st.markdown("""
         margin: 20px 0;
         animation: fadeIn 0.5s;
     }
-   
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    }
     .stTextArea textarea {
         border-radius: 10px;
         border: 2px solid #dee2e6;
@@ -307,12 +308,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-/* Slimmer buttons for better alignment */
-    .stButton > button {
-        padding: 8px 20px !important;
-        min-height: 44px !important;
-    }
 
 # ---------------------------
 # Auto-refresh mechanism
@@ -507,10 +502,18 @@ if not st.session_state.show_wish_results:
             # Show evaluation progress
             progress_bar = st.progress(0)
             status_text = st.empty()
-           
-            # Show evaluation status
-            with st.spinner("🔮 Evaluating your wish..."):
-                time.sleep(2)
+            
+            # Simulate evaluation steps
+            for i in range(1, 4):
+                if i == 1:
+                    status_text.text("🔮 Reading your wish...")
+                elif i == 2:
+                    status_text.text("🎄 Consulting the Christmas elves...")
+                elif i == 3:
+                    status_text.text("✨ Calculating probability...")
+                
+                progress_bar.progress(i * 33)
+                time.sleep(0.8)  # Shorter delay
             
             # Evaluate wish
             label, score = evaluate_wish_sentiment(wish_prompt)
@@ -530,6 +533,7 @@ if not st.session_state.show_wish_results:
                 st.session_state.show_wish_results = True
                 
                 # Show success and redirect
+                progress_bar.progress(100)
                 status_text.text("✅ Wish evaluated successfully!")
                 time.sleep(1)
                 st.rerun()
@@ -574,37 +578,25 @@ else:
             <p style='font-size: 18px; margin: 5px 0;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        st.progress(current_prob / 100.0)
 
         # Share section
         st.markdown("---")
+        st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
+        st.markdown("The more friends who support your wish, the higher your probability!")
         
-        # First row: Text and Check for Updates button - properly aligned
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
-            st.markdown("The more friends who support your wish, the higher your probability!")
-        with col2:
-            # Custom styled button with vertical alignment
-            st.markdown("""
-            <style>
-            .aligned-button {
-                height: 68px !important;
-                padding: 5px 10px !important;
-                margin-top: 18px !important;
-                font-size: 14px !important;
-                white-space: nowrap !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🔄 Check for Updates", key="aligned_check_updates", 
-                        use_container_width=True):
-                st.rerun()
-        
-        # Share link box
         share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
+        
         st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-                 
+        
+        # Action buttons
+        col1,col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Check for Updates", use_container_width=True):
+                st.rerun()
+                
     else:
         st.error("❌ Wish data not found. Please create a new wish.")
         if st.button("📝 Make New Wish", type="primary", use_container_width=True):
