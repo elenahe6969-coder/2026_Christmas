@@ -6,7 +6,6 @@ import json
 import os
 import hashlib
 from datetime import datetime
-import tempfile
 
 # ---------------------------s
 # Session state initialization
@@ -363,21 +362,17 @@ if shared_wish_id:
     col1, col2, col3 = st.columns([1, 2, 1])
     
 if shared_wish_id:
-    import io
+     import tempfile
     from gtts import gTTS
+
     # Show shared wish support section
     st.markdown(f"### 🎅 Message from your friend:")
-    # Show refresh button
-    col1, col2, col3 = st.columns([1, 2, 1])
     
     # Text message
     shared_message = "Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck and help make my wish come true!"
 
-    # Convert message to audio
-    # Generate audio using gTTS
+    # Convert message to audio and save to a temporary file for mobile compatibility
     tts = gTTS(text=shared_message, lang='en')
-
-    # Save to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
         tts.write_to_fp(tmp_file)
         tmp_file_path = tmp_file.name
@@ -394,21 +389,21 @@ if shared_wish_id:
 
     # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
-    
+
     # Create wish if it doesn't exist
     if not wish_data and decoded_wish:
         initial_prob = url_prob if url_prob is not None else 60.0
         wish_data = create_or_update_wish(shared_wish_id, decoded_wish, initial_prob)
-    
+
     # If we have wish data, display it
     if wish_data:
         current_prob = float(wish_data.get('current_probability', 0.0))
         supporters_count = len(wish_data.get('supporters', []))
-        
+
         # Store last seen probability for comparison
         if 'last_seen_prob' not in st.session_state:
             st.session_state.last_seen_prob = current_prob
-        
+
         # Check for updates
         if abs(current_prob - st.session_state.last_seen_prob) > 0.01:
             st.markdown(f"""
@@ -418,53 +413,41 @@ if shared_wish_id:
             </div>
             """, unsafe_allow_html=True)
             st.session_state.last_seen_prob = current_prob
-        
-        # Auto-refresh indicator
-        next_refresh = 15 - (st.session_state.refresh_counter % 3) * 5
-        
+
     else:
         st.error("❌ Wish not found. The link might be invalid or expired.")
 
     # Support button
     increment = get_random_increment()
-    
-    # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
-    
+
     st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
     if st.button(f"✨ Add Your Luck! (+{increment}%)", 
                  type="primary", 
                  use_container_width=True,
                  key=button_key):
-        
         success, new_probability = update_wish_probability(
             shared_wish_id,
             increment,
             st.session_state.supporter_id
         )
-                     
         if success:
-            # Show success message
             st.markdown(f"""
             <div class="success-message">
                 <h3>🎄 Thank You!</h3>
                 <p>You added <b>+{increment}%</b> luck to your friend's wish! Your kindness will return to you in 2026!</p>
             </div>
             """, unsafe_allow_html=True)
-            
             st.balloons()
-            
-            # Update session state
             st.session_state.last_seen_prob = new_probability
-
         else:
             st.info("🎅 You've already shared your luck for this wish. Thank you!")
-    
+
     # Make your own wish
     st.markdown("---")
     st.markdown("### 🎄 Ready to Make Your Own Wish?")
     st.markdown("https://2026christmas-yourwish-mywish-elena.streamlit.app/")
-    
+
     # Add JavaScript for auto-refresh
     st.components.v1.html("""
     <script>
@@ -472,7 +455,7 @@ if shared_wish_id:
     setTimeout(function() {
         window.location.reload();
     }, 15000);
-    
+
     // Refresh when page becomes visible
     document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
