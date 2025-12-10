@@ -357,11 +357,10 @@ check_and_refresh()
 
 # Show shared wish support section
 st.markdown("""
-    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
-    border-radius: 15px; margin: 20px 0;'>
+    <div style='text-align: center; padding: 20px; 
     <h3>🎅 Message from your friend:</h3>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 # ---------------------------
 if shared_wish_id:
