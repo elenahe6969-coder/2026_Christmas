@@ -572,13 +572,27 @@ else:
         # Share section
         st.markdown("---")
         
-        # First row: Text and Check for Updates button
-        col1, col2 = st.columns([3, 1])
+        # First row: Text and Check for Updates button - properly aligned
+        col1, col2 = st.columns([4, 1])
         with col1:
             st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
             st.markdown("The more friends who support your wish, the higher your probability!")
         with col2:
-            if st.button("🔄 Check for Updates", use_container_width=True):
+            # Custom styled button with vertical alignment
+            st.markdown("""
+            <style>
+            .aligned-button {
+                height: 68px !important;
+                padding: 5px 10px !important;
+                margin-top: 18px !important;
+                font-size: 14px !important;
+                white-space: nowrap !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Check for Updates", key="aligned_check_updates", 
+                        use_container_width=True):
                 st.rerun()
         
         # Share link box
