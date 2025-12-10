@@ -365,7 +365,7 @@ if shared_wish_id:
     border-radius: 15px; margin: 20px 0;'>
     <h3>🎅 Message from your friend:</h3>
     <p style='font-size: 18px;'><i>"Merry Christmas! I just made a wish for 2026. 
-    Please click the button below to share your Christmas luck and help make my wish come true!"</i></p>
+    Please click the button below to share your luck and help make my wish come true!"</i></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -413,7 +413,7 @@ if shared_wish_id:
     increment = get_random_increment()
     
     st.markdown("---")
-    st.markdown(f"### ✨ Add Your Christmas Luck!")
+    st.markdown(f"### ✨ Add Your Luck!")
     
     # Create a unique key for the button
     button_key = f"support_button_{shared_wish_id}"
@@ -435,8 +435,7 @@ if shared_wish_id:
             st.markdown(f"""
             <div class="success-message">
                 <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> Christmas luck!</p>
-                <p><b>New Probability: {new_probability:.1f}%</b></p>
+                <p>You added <b>+{increment}%</b> luck to your friend's wish!</p>
                 <p><i>Your kindness will return to you in 2026!</i></p>
             </div>
             """, unsafe_allow_html=True)
@@ -447,7 +446,7 @@ if shared_wish_id:
             st.session_state.last_seen_prob = new_probability
 
         else:
-            st.info("🎅 You've already shared your Christmas luck for this wish. Thank you!")
+            st.info("🎅 You've already shared your luck for this wish. Thank you!")
     
     # Make your own wish
     st.markdown("---")
