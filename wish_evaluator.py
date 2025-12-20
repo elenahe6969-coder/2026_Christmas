@@ -433,22 +433,16 @@ check_and_refresh()
 # Shared-wish page (if any)
 # ---------------------------
 if shared_wish_id:
-    try:
-        # Import for audio functionality
-        from io import BytesIO
-        from gtts import gTTS
-    except ImportError:
-        # Fallback if gTTS is not available
-        pass
-
     # Show shared wish support section with compact spacing
     st.markdown(f"### 🎅 Message from your friend:")
     
     # Text message
     shared_message = "Merry Xmas! I just made a wish for 2026. Please share your luck and help make my wish come true!"
 
+    # Try to create audio version
+    audio_success = False
     try:
-        # Try to create audio version
+        # Import inside try block
         from io import BytesIO
         from gtts import gTTS
         
@@ -460,13 +454,17 @@ if shared_wish_id:
         tts.write_to_fp(audio_bytes)
         audio_bytes.seek(0)
         
-        # Display with compact spacing
-        st.markdown(f'<div style="margin: 8px 0; font-size: 14px;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+        # Display audio player
         st.markdown("<p style='margin: 5px 0; font-size: 14px;'>**🔊 Listen to the message:**</p>", unsafe_allow_html=True)
         st.audio(audio_bytes, format="audio/mp3")
+        audio_success = True
         
     except Exception as e:
-        # Fallback without audio
+        # If audio fails, just show the text
+        audio_success = False
+    
+    # Only show the text message if audio failed
+    if not audio_success:
         st.markdown(f"""
         <div style="padding: 12px; background: #fff3cd; border-radius: 8px; margin: 8px 0; font-size: 14px;">
             <i>"{shared_message}"</i>
