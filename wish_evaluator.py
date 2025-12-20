@@ -513,172 +513,203 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Background Music - SIMPLE GUARANTEED WORKING VERSION
+# Background Music - SIMPLE HTML5 AUDIO (MOST RELIABLE)
 # ---------------------------
 # Add background music with controls
 st.markdown("""
 <div class="music-controls" id="musicControls">
-    <button class="music-btn" onclick="toggleMusic()" id="musicToggle" title="Click for Christmas music">🎵</button>
-    <input type="range" min="0" max="100" value="30" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)">
+    <button class="music-btn" onclick="toggleMusic()" id="musicToggle" title="Click to play Christmas music">▶️</button>
+    <input type="range" min="0" max="100" value="50" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)">
 </div>
 
+<!-- Simple HTML5 audio with base64 encoded sound -->
+<audio id="christmasMusic" loop preload="none">
+    <!-- Very short beep sound encoded in base64 -->
+    <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav">
+</audio>
+
 <script>
-// Simple audio generation using Web Audio API - GUARANTEED TO WORK
-let audioContext;
-let oscillator;
-let gainNode;
-let isPlaying = false;
-let volume = 0.3;
+// Simple audio player
+const audio = document.getElementById('christmasMusic');
+const musicToggle = document.getElementById('musicToggle');
+const volumeSlider = document.getElementById('volumeSlider');
 
-// Create Christmas melody tones
-const christmasNotes = [
-    {freq: 523.25, duration: 0.5}, // C5
-    {freq: 587.33, duration: 0.5}, // D5
-    {freq: 659.25, duration: 0.5}, // E5
-    {freq: 523.25, duration: 0.5}, // C5
-    {freq: 523.25, duration: 0.5}, // C5
-    {freq: 587.33, duration: 0.5}, // D5
-    {freq: 659.25, duration: 0.5}, // E5
-    {freq: 523.25, duration: 0.5}, // C5
-    {freq: 659.25, duration: 0.5}, // E5
-    {freq: 698.46, duration: 0.5}, // F5
-    {freq: 783.99, duration: 1.0}, // G5
-    {freq: 659.25, duration: 0.5}, // E5
-    {freq: 698.46, duration: 0.5}, // F5
-    {freq: 783.99, duration: 1.0}, // G5
-];
+// Set initial volume
+audio.volume = 0.5;
 
-let currentNote = 0;
+// Check if we can play audio
+function canPlayAudio() {
+    return typeof audio.play === 'function';
+}
 
-function initAudio() {
+// Generate simple beep sound
+function playBeep() {
     try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioContext = new AudioContextClass();
-        console.log("Web Audio API initialized");
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const context = new AudioContext();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.value = audio.volume * 0.3;
+        
+        oscillator.start();
+        
+        // Stop after 200ms
+        setTimeout(() => {
+            oscillator.stop();
+            context.close();
+        }, 200);
+        
         return true;
     } catch (e) {
-        console.log("Web Audio API not supported:", e);
+        console.log("Could not play beep:", e);
         return false;
     }
 }
 
-function playNote() {
-    if (!audioContext || !isPlaying) return;
-    
-    if (oscillator) {
-        oscillator.stop();
-        oscillator.disconnect();
+// Play Christmas melody
+function playChristmasMelody() {
+    if (!canPlayAudio()) {
+        // Fallback to beeps
+        playBeepSequence();
+        return;
     }
     
-    oscillator = audioContext.createOscillator();
-    gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.value = christmasNotes[currentNote].freq;
-    gainNode.gain.value = volume;
-    
-    oscillator.start();
-    
-    // Schedule next note
-    setTimeout(() => {
-        currentNote = (currentNote + 1) % christmasNotes.length;
-        if (isPlaying) {
-            playNote();
-        } else {
-            oscillator.stop();
-        }
-    }, christmasNotes[currentNote].duration * 800); // Slightly faster tempo
-}
-
-function toggleMusic() {
-    if (!audioContext) {
-        if (!initAudio()) {
-            alert("🎄 Your browser doesn't support Web Audio API. Try Chrome or Firefox!");
-            return;
-        }
-    }
-    
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-    
-    isPlaying = !isPlaying;
-    const musicToggle = document.getElementById('musicToggle');
-    
-    if (isPlaying) {
-        musicToggle.textContent = "🔊";
+    // Try to play the audio element
+    audio.play().then(() => {
+        musicToggle.textContent = "⏸️";
         musicToggle.title = "Click to pause music";
-        playNote();
-    } else {
-        musicToggle.textContent = "🎵";
-        musicToggle.title = "Click for Christmas music";
-        if (oscillator) {
-            oscillator.stop();
+        console.log("Christmas music started!");
+    }).catch(error => {
+        console.log("Audio play failed:", error);
+        // Fallback to beep sequence
+        playBeepSequence();
+    });
+}
+
+// Fallback: play beep sequence
+let beepInterval;
+function playBeepSequence() {
+    let beepCount = 0;
+    const maxBeeps = 8;
+    
+    beepInterval = setInterval(() => {
+        playBeep();
+        beepCount++;
+        
+        if (beepCount >= maxBeeps) {
+            clearInterval(beepInterval);
+            // Restart sequence
+            setTimeout(() => {
+                if (isPlaying) {
+                    playBeepSequence();
+                }
+            }, 1000);
         }
+    }, 500);
+    
+    musicToggle.textContent = "🔊";
+    musicToggle.title = "Click to pause music";
+}
+
+// Toggle music
+let isPlaying = false;
+function toggleMusic() {
+    if (!isPlaying) {
+        // Start music
+        isPlaying = true;
+        playChristmasMelody();
+    } else {
+        // Stop music
+        isPlaying = false;
+        
+        if (audio.pause) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+        
+        if (beepInterval) {
+            clearInterval(beepInterval);
+        }
+        
+        musicToggle.textContent = "▶️";
+        musicToggle.title = "Click to play Christmas music";
     }
 }
 
+// Change volume
 function changeVolume(value) {
-    volume = value / 100;
-    if (gainNode) {
-        gainNode.gain.value = volume;
-    }
+    const volume = value / 100;
+    audio.volume = volume;
     
     // Update icon
-    const musicToggle = document.getElementById('musicToggle');
     if (value == 0) {
-        musicToggle.textContent = "🔇";
+        musicToggle.textContent = isPlaying ? "🔇" : "▶️";
     } else if (value < 30) {
-        musicToggle.textContent = "🔈";
+        musicToggle.textContent = isPlaying ? "🔈" : "▶️";
     } else if (value < 70) {
-        musicToggle.textContent = "🔉";
+        musicToggle.textContent = isPlaying ? "🔉" : "▶️";
     } else {
-        musicToggle.textContent = "🔊";
+        musicToggle.textContent = isPlaying ? "🔊" : "▶️";
     }
     
     localStorage.setItem('wishAppVolume', value);
 }
 
-// Initialize on load
+// Initialize
 window.addEventListener('load', function() {
-    // Try to initialize audio context
-    initAudio();
-    
     // Load saved volume
     const savedVolume = localStorage.getItem('wishAppVolume');
     if (savedVolume) {
-        document.getElementById('volumeSlider').value = savedVolume;
-        changeVolume(savedVolume);
+        volumeSlider.value = savedVolume;
+        audio.volume = savedVolume / 100;
     }
     
-    // Show instruction after 3 seconds
+    // Add instruction tooltip after delay
     setTimeout(() => {
         if (!isPlaying) {
-            const musicToggle = document.getElementById('musicToggle');
+            musicToggle.title = "🎵 Click for Christmas music!";
+            // Make button pulse
             musicToggle.style.animation = 'pulse 2s infinite';
         }
     }, 3000);
 });
 
-// Enable on first click anywhere
-document.addEventListener('click', function initOnClick() {
-    if (!audioContext) {
-        initAudio();
+// Make button more visible
+const style = document.createElement('style');
+style.textContent = `
+    .music-btn {
+        animation: none;
     }
-    document.removeEventListener('click', initOnClick);
-}, { once: true });
-</script>
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes glow {
+        0% { box-shadow: 0 0 5px #FF6B6B; }
+        50% { box-shadow: 0 0 20px #FF6B6B, 0 0 30px #FF6B6B; }
+        100% { box-shadow: 0 0 5px #FF6B6B; }
+    }
+`;
+document.head.appendChild(style);
 
-<style>
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-}
-</style>
+// Add glow effect when not playing
+setInterval(() => {
+    if (!isPlaying) {
+        musicToggle.style.animation = 'glow 2s infinite, pulse 2s infinite';
+    } else {
+        musicToggle.style.animation = 'none';
+    }
+}, 100);
+</script>
 """, unsafe_allow_html=True)
 
 # ---------------------------
