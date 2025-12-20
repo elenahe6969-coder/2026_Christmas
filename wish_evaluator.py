@@ -454,7 +454,7 @@ if shared_wish_id:
 
     # Make your own wish
     st.markdown("---")
-    st.markdown("### 🎄 Ready to Make Your Own Wish?")
+    st.markdown("### 🎄 Make Your Own Wish?")
     st.markdown("https://2026christmas-yourwish-mywish-elena.streamlit.app/")
 
     # Add JavaScript for auto-refresh
