@@ -474,9 +474,9 @@ if shared_wish_id:
 # ---------------------------
 if not st.session_state.show_wish_results:
     st.markdown("""
-    <div style='text-align: center; padding: 20px;'>
-        <h2>✨ Hi there, 
-        Merry Christmas! 🎄</h2>
+    <div style='text-align: center; padding: 20px;'> 
+        <h2 style='margin-bottom: 10px;'>✨ Hi there,</h2>
+        <h2 style='margin-top: 10px;'>Merry Christmas! 🎄</h2>
         <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate the probability!</p>
     </div>
     """, unsafe_allow_html=True)
