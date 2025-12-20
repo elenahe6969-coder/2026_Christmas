@@ -677,7 +677,7 @@ if not st.session_state.show_wish_results:
     
     # Textarea with snowy effect
     wish_prompt = st.text_area("🎅 What's your wish?",
-        placeholder="Example: I wish to learn Spanish fluently in 2026...",
+        placeholder="Example: I want to be Superman...",
         key="wish_input",
         height=100,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
