@@ -1,4 +1,4 @@
-import streamlit as st
+update the complete code to shrink the blank space at the top of the screen for all pages based on the latest version. import streamlit as st
 import urllib.parse
 import time
 import random
