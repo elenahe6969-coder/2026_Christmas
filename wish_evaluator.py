@@ -208,104 +208,180 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* Reduce top padding and margin */
+    .stApp {
+        margin-top: -50px !important;
+        padding-top: 10px !important;
+    }
+    
+    /* Adjust main container */
+    .main .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+    
+    /* Adjust header spacing */
+    h1, h2, h3 {
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Reduce spacing in probability display */
+    .compact-spacing {
+        padding: 15px !important;
+        margin: 15px 0 !important;
+    }
+    
+    .compact-spacing h1 {
+        font-size: 42px !important;
+        margin: 10px 0 !important;
+    }
+    
+    .compact-spacing h3 {
+        margin: 5px 0 !important;
+    }
+    
+    /* Compact wish quote */
+    .compact-wish-quote {
+        font-style: italic;
+        font-size: 18px;
+        color: #2c3e50;
+        margin: 15px 0;
+        padding: 15px;
+        background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+        border-radius: 12px;
+        border-left: 4px solid #e74c3c;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+    }
+    
+    /* Compact buttons */
     .stButton > button {
         background-color: #FF6B6B;
         color: white;
         border: none;
-        padding: 12px 24px;
-        border-radius: 10px;
+        padding: 10px 20px;
+        border-radius: 8px;
         font-weight: bold;
         font-size: 16px;
         transition: all 0.3s;
-        width: 100% !important;  /* Make all buttons full width of their container */
+        width: 100% !important;
+        margin: 5px 0 !important;
     }
+    
     .stButton > button:hover {
         background-color: #FF5252;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
+    
+    /* Compact share box */
     .share-box {
         background-color: #f8f9fa;
         border: 2px dashed #dee2e6;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 10px 0;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 8px 0;
         font-family: 'Courier New', monospace;
         word-break: break-all;
-        font-size: 14px;
+        font-size: 13px;
     }
-    .wish-quote {
-        font-style: italic;
-        font-size: 20px;
-        color: #2c3e50;
-        margin: 20px 0;
-        padding: 20px;
-        background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
-        border-radius: 15px;
-        border-left: 5px solid #e74c3c;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
+    
+    /* Compact probability display */
     .probability-display {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 30px;
-        border-radius: 20px;
+        padding: 20px;
+        border-radius: 15px;
         text-align: center;
-        margin: 25px 0;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        margin: 15px 0;
+        box-shadow: 0 5px 12px rgba(0,0,0,0.15);
     }
+    
     .update-notification {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         border: none;
         color: white;
-        border-radius: 12px;
-        padding: 15px;
-        margin: 15px 0;
+        border-radius: 10px;
+        padding: 12px;
+        margin: 10px 0;
         animation: fadeIn 0.5s;
         text-align: center;
         font-weight: bold;
+        font-size: 14px;
     }
+    
     .refresh-indicator {
         background-color: rgba(231, 76, 60, 0.1);
         border: 2px solid #e74c3c;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 15px 0;
-        font-size: 14px;
+        border-radius: 8px;
+        padding: 8px;
+        margin: 10px 0;
+        font-size: 13px;
         text-align: center;
         color: #e74c3c;
     }
+    
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
+        from { opacity: 0; transform: translateY(-8px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    
     @keyframes pulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+        50% { transform: scale(1.03); }
         100% { transform: scale(1); }
     }
+    
     .pulse {
         animation: pulse 2s infinite;
     }
+    
     .success-message {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         color: white;
-        padding: 20px;
-        border-radius: 15px;
-        margin: 20px 0;
+        padding: 15px;
+        border-radius: 12px;
+        margin: 15px 0;
         animation: fadeIn 0.5s;
     }
+    
     .stProgress > div > div > div > div {
         background: linear-gradient(90deg, #4CAF50, #8BC34A);
     }
+    
     .stTextArea textarea {
-        border-radius: 10px;
+        border-radius: 8px;
         border: 2px solid #dee2e6;
-        padding: 15px;
+        padding: 12px;
         font-size: 16px;
+        margin: 5px 0;
     }
-    h1, h2, h3 {
-        color: #2c3e50;
+    
+    /* Reduce spacing for text elements */
+    p {
+        margin: 5px 0 !important;
+        padding: 2px 0 !important;
+    }
+    
+    /* Adjust hr spacing */
+    hr {
+        margin: 15px 0 !important;
+    }
+    
+    /* Footer adjustments */
+    .footer-compact {
+        text-align: center;
+        padding: 10px !important;
+        margin-top: 10px !important;
+        color: #666;
+        font-size: 14px;
+    }
+    
+    /* Center alignment helper */
+    .center-content {
+        text-align: center;
+        padding: 5px 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -332,6 +408,7 @@ def check_and_refresh():
             }, 100);
             </script>
             """)
+
 # ---------------------------
 # Query params handling
 # ---------------------------
@@ -354,47 +431,54 @@ check_and_refresh()
 
 # ---------------------------
 # Shared-wish page (if any)
-
-
 # ---------------------------
 if shared_wish_id:
-    # Show refresh button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-if shared_wish_id:
-    import tempfile
-    from gtts import gTTS
+    try:
+        # Import for audio functionality
+        from io import BytesIO
+        from gtts import gTTS
+    except ImportError:
+        # Fallback if gTTS is not available
+        pass
 
-    # Show shared wish support section
+    # Show shared wish support section with compact spacing
     st.markdown(f"### 🎅 Message from your friend:")
     
     # Text message
     shared_message = "Merry Xmas! I just made a wish for 2026. Please share your luck and help make my wish come true!"
 
     try:
-    # Convert message to audio
+        # Try to create audio version
+        from io import BytesIO
+        from gtts import gTTS
+        
+        # Convert message to audio
         tts = gTTS(text=shared_message, lang='en')
-    
-    # Save to BytesIO
+        
+        # Save to BytesIO
         audio_bytes = BytesIO()
         tts.write_to_fp(audio_bytes)
         audio_bytes.seek(0)
-    
-    # Display with Streamlit's audio player
-        st.markdown(f'<div style="margin: 10px 0;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
-        st.markdown("**🔊 Listen to the message:**")
+        
+        # Display with compact spacing
+        st.markdown(f'<div style="margin: 8px 0; font-size: 14px;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+        st.markdown("<p style='margin: 5px 0; font-size: 14px;'>**🔊 Listen to the message:**</p>", unsafe_allow_html=True)
         st.audio(audio_bytes, format="audio/mp3")
-    
+        
     except Exception as e:
-    # Fallback
-        st.markdown(f'<div style="padding: 15px; background: #fff3cd; border-radius: 10px; margin: 10px 0;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+        # Fallback without audio
+        st.markdown(f"""
+        <div style="padding: 12px; background: #fff3cd; border-radius: 8px; margin: 8px 0; font-size: 14px;">
+            <i>"{shared_message}"</i>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Decode wish text
     decoded_wish = ""
     if shared_wish_text:
         decoded_wish = safe_decode_wish(shared_wish_text)
         if decoded_wish:
-            st.markdown(f'<div class="wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="compact-wish-quote">"{decoded_wish}"</div>', unsafe_allow_html=True)
 
     # Get current wish data
     wish_data = get_wish_data(shared_wish_id)
@@ -426,11 +510,11 @@ if shared_wish_id:
     else:
         st.error("❌ Wish not found. The link might be invalid or expired.")
 
-    # Support button
+    # Support button with compact spacing
     increment = get_random_increment()
     button_key = f"support_button_{shared_wish_id}"
 
-    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+    st.markdown('<div class="center-content">', unsafe_allow_html=True)
     if st.button(f"✨ Add Your Luck! (+{increment}%)", 
                  type="primary", 
                  use_container_width=True,
@@ -443,8 +527,8 @@ if shared_wish_id:
         if success:
             st.markdown(f"""
             <div class="success-message">
-                <h3>🎄 Thank You!</h3>
-                <p>You added <b>+{increment}%</b> luck to your friend's wish! Your kindness will return to you in 2026!</p>
+                <h4 style="margin: 5px 0;">🎄 Thank You!</h4>
+                <p style="margin: 5px 0; font-size: 14px;">You added <b>+{increment}%</b> luck to your friend's wish! Your kindness will return to you in 2026!</p>
             </div>
             """, unsafe_allow_html=True)
             st.balloons()
@@ -452,169 +536,5 @@ if shared_wish_id:
         else:
             st.info("🎅 You've already shared your luck for this wish. Thank you!")
 
-    # Make your own wish
+    # Make your own wish section with compact spacing
     st.markdown("---")
-    st.markdown("### 🎄 Make Your Own Wish?")
-    st.markdown("https://2026christmas-yourwish-mywish-elena.streamlit.app/")
-
-    # Add JavaScript for auto-refresh
-    st.components.v1.html("""
-    <script>
-    // Auto-refresh every 15 seconds
-    setTimeout(function() {
-        window.location.reload();
-    }, 15000);
-
-    // Refresh when page becomes visible
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-            setTimeout(function() {
-                window.location.reload();
-            }, 2000);
-        }
-    });
-    </script>
-    """)
-    
-    st.stop()
-
-# ---------------------------
-# Main app: create/evaluate wish
-# ---------------------------
-if not st.session_state.show_wish_results:
-    st.markdown("""
-    <div style='text-align: center; padding: 20px;'> 
-        <h2>✨ Hi there, Merry Xmas! 🎄</h2>
-        <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate the probability!</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    wish_prompt = st.text_area("🎅 What's your wish?",
-        placeholder="Example: I wish to learn Spanish fluently in 2026...",
-        key="wish_input",
-        height=120,
-        help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
-    )
-    # Center the evaluate button
-    st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-    if st.button("🎯 **Evaluate My Wish**", type="primary", use_container_width=True, key="evaluate_wish"):
-        if wish_prompt and len(wish_prompt.strip()) > 3:
-            # Show evaluation progress
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            # Simulate evaluation steps
-            for i in range(1, 4):
-                if i == 1:
-                    status_text.text("🔮 Reading your wish...")
-                elif i == 2:
-                    status_text.text("🎄 Consulting the Christmas elves...")
-                elif i == 3:
-                    status_text.text("✨ Calculating probability...")
-                
-                progress_bar.progress(i * 33)
-                time.sleep(0.8)  # Shorter delay
-            
-            # Evaluate wish
-            label, score = evaluate_wish_sentiment(wish_prompt)
-            
-            if label == 'POSITIVE':
-                # Calculate base probability
-                base_probability = float(60.0 + (score * 20))
-                
-                # Generate wish ID and save
-                wish_id = generate_wish_id(wish_prompt)
-                wish_data = create_or_update_wish(wish_id, wish_prompt, base_probability)
-                
-                # Update session state
-                st.session_state.my_wish_text = wish_prompt
-                st.session_state.my_wish_probability = wish_data['current_probability']
-                st.session_state.wish_id = wish_id
-                st.session_state.show_wish_results = True
-                
-                # Show success and redirect
-                progress_bar.progress(100)
-                status_text.text("✅ Wish evaluated successfully!")
-                time.sleep(1)
-                st.rerun()
-            else:
-                # Show improvement tips
-                st.warning("### 🎄 Let's Make This Wish Even Better!")
-                st.markdown(f"""
-                **Your wish:** "{wish_prompt[:150]}..."
-                
-                **✨ Improvement Tips:**
-                1. **Start with positive words** like "I wish", "I hope", "I want"
-                2. **Be specific** about what you want to achieve
-                3. **Focus on positive outcomes** you desire
-                
-                **Example transformation:**
-                - Instead of: "I don't want to be stressed"
-                - Try: "I wish to find peace, balance, and reduce stress in 2026"
-                
-                **Try rewriting your wish with a positive focus!**
-                """)
-        else:
-            st.warning("📝 Please write your wish (at least 4 characters)")
-
-# ---------------------------
-# Show wish results
-# ---------------------------
-else:
-    # Get latest wish data
-    wish_data = get_wish_data(st.session_state.wish_id)
-    
-    if wish_data:
-        # Update with latest probability
-        current_prob = float(wish_data.get('current_probability', 0.0))
-        st.session_state.my_wish_probability = current_prob
-        supporters_count = len(wish_data.get('supporters', []))
-
-        # Display wish probability
-        st.markdown(f"""
-        <div class="probability-display compact-spacing">
-            <h3 style='margin: 5px 0;'>✨ Your Wish Probability</h3>
-            <h1 style='font-size: 48px; margin: 5px 0;'>{current_prob:.1f}%</h1>
-            <p style='font-size: 18px; margin: 5px 0;'>🎅 {supporters_count} friend{'s have' if supporters_count != 1 else ' has'} shared luck</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-       # Share section
-        st.markdown("---")
-        st.markdown("### 📤 **Share with Friends to Boost Your Luck!**")
-        st.markdown("The more friends who support your wish, the higher your probability!")
-        
-        share_link = create_share_link(st.session_state.wish_id, st.session_state.my_wish_text, current_prob)
-        
-        st.markdown(f'<div class="share-box">{share_link}</div>', unsafe_allow_html=True)
-        
-        # Action buttons - make Check for Updates button full width
-        if st.button("🔄 Check for Updates", type="primary", use_container_width=True):
-            st.rerun()
-                
-    else:
-        st.error("❌ Wish data not found. Please create a new wish.")
-        if st.button("📝 Make New Wish", type="primary", use_container_width=True, key="error_new_wish"):
-            st.session_state.show_wish_results = False
-            st.session_state.my_wish_text = ""
-            st.session_state.wish_id = None
-            st.rerun()
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; padding: 5px; color: #666;'>
-    <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Add auto-refresh JavaScript for main page too
-if st.session_state.show_wish_results:
-    st.components.v1.html("""
-    <script>
-    // Auto-refresh every 30 seconds on wish results page
-    setTimeout(function() {
-        window.location.reload();
-    }, 30000);
-    </script>
-    """)
