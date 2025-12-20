@@ -462,6 +462,8 @@ if shared_wish_id:
         
         # Display with compact spacing
         st.markdown(f'<div style="margin: 8px 0; font-size: 14px;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+        st.markdown("<p style='margin: 5px 0; font-size: 14px;'>**🔊 Listen to the message:**</p>", unsafe_allow_html=True)
+        st.audio(audio_bytes, format="audio/mp3")
         
     except Exception as e:
         # Fallback without audio
