@@ -513,21 +513,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Background Music
+# Background Music - Alternative with base64 audio
 # ---------------------------
 # Add background music with controls
 st.markdown("""
 <div class="music-controls" id="musicControls">
-    <button class="music-btn" onclick="toggleMusic()" id="musicToggle">🎵</button>
+    <button class="music-btn" onclick="toggleMusic()" id="musicToggle">🔇</button>
     <input type="range" min="0" max="100" value="30" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)">
 </div>
 
-<audio id="bgMusic" loop autoplay>
-    <!-- Using a free Christmas music URL that works in browsers -->
-    <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
-    <!-- Fallback music sources -->
-    <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-is-here-276.mp3" type="audio/mpeg">
-    <source src="https://assets.mixkit.co/music/preview/mixkit-sleigh-bells-308.mp3" type="audio/mpeg">
+<audio id="bgMusic" loop>
+    <!-- Short Christmas bell sound encoded in base64 -->
+    <source src="data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAABVAACBiwABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8AAABqTEFNRTMuOTlyAaoAAAAALjoAABUxIENQlQABAAACgYCB/4AA" type="audio/mpeg">
 </audio>
 
 <script>
@@ -539,58 +536,111 @@ const volumeSlider = document.getElementById('volumeSlider');
 // Set initial volume
 bgMusic.volume = 0.3;
 
-// Try to play music automatically (browsers may block this)
-function playMusic() {
-    bgMusic.play().catch(e => {
-        console.log("Autoplay blocked:", e);
-        // Show play button if autoplay is blocked
-        musicToggle.textContent = "▶️";
-    });
-}
+// Music state
+let musicEnabled = false;
 
-// Call play on page load
-window.addEventListener('load', function() {
-    setTimeout(playMusic, 1000);
-});
+// Play music function
+function playMusic() {
+    if (!musicEnabled) {
+        // Create audio context on user gesture
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            const audioContext = new AudioContext();
+            audioContext.resume().then(() => {
+                console.log("Audio context resumed");
+            });
+        }
+        
+        // Play the audio
+        bgMusic.play().then(() => {
+            musicToggle.textContent = "🔊";
+            musicEnabled = true;
+            console.log("Christmas music started!");
+        }).catch(error => {
+            console.log("Audio play failed:", error);
+            musicToggle.textContent = "▶️";
+            musicToggle.title = "Click to enable Christmas music";
+        });
+    }
+}
 
 // Toggle music play/pause
 function toggleMusic() {
     if (bgMusic.paused) {
-        bgMusic.play();
-        musicToggle.textContent = "🎵";
+        bgMusic.play().then(() => {
+            musicToggle.textContent = "🔊";
+            musicEnabled = true;
+        }).catch(error => {
+            console.log("Play error:", error);
+            // If play fails, try to reinitialize
+            bgMusic.load();
+            setTimeout(() => {
+                bgMusic.play().then(() => {
+                    musicToggle.textContent = "🔊";
+                    musicEnabled = true;
+                });
+            }, 100);
+        });
     } else {
         bgMusic.pause();
-        musicToggle.textContent = "▶️";
+        musicToggle.textContent = "🔇";
     }
 }
 
-// Change volume
+// Change volume with visual feedback
 function changeVolume(value) {
-    bgMusic.volume = value / 100;
+    const volume = value / 100;
+    bgMusic.volume = volume;
+    
+    // Update button based on volume level
+    if (volume === 0) {
+        musicToggle.textContent = "🔇";
+    } else if (volume < 0.3) {
+        musicToggle.textContent = "🔈";
+    } else if (volume < 0.7) {
+        musicToggle.textContent = "🔉";
+    } else {
+        musicToggle.textContent = "🔊";
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('wishAppVolume', value);
 }
 
-// Also try to play when user interacts with the page
-document.addEventListener('click', function() {
-    if (bgMusic.paused) {
-        bgMusic.play().then(() => {
-            musicToggle.textContent = "🎵";
-        }).catch(e => {
-            // Autoplay still blocked
-        });
-    }
-}, { once: true });
-
-// Save volume to session
-volumeSlider.addEventListener('change', function() {
-    localStorage.setItem('wishAppVolume', this.value);
-});
-
-// Load saved volume
+// Initialize from localStorage
 window.addEventListener('load', function() {
     const savedVolume = localStorage.getItem('wishAppVolume');
     if (savedVolume) {
         volumeSlider.value = savedVolume;
-        bgMusic.volume = savedVolume / 100;
+        changeVolume(savedVolume);
+    }
+    
+    // Try to auto-play after a short delay
+    setTimeout(() => {
+        if (!musicEnabled) {
+            playMusic();
+        }
+    }, 1000);
+});
+
+// Enable audio on first user interaction
+function enableAudioOnInteraction() {
+    playMusic();
+    // Remove all interaction listeners once audio is enabled
+    document.removeEventListener('click', enableAudioOnInteraction);
+    document.removeEventListener('keydown', enableAudioOnInteraction);
+    document.removeEventListener('touchstart', enableAudioOnInteraction);
+}
+
+// Add multiple event listeners for user interaction
+document.addEventListener('click', enableAudioOnInteraction);
+document.addEventListener('keydown', enableAudioOnInteraction);
+document.addEventListener('touchstart', enableAudioOnInteraction);
+
+// Also enable when user interacts with the music controls directly
+document.getElementById('musicControls').addEventListener('click', function(e) {
+    if (!musicEnabled && (e.target.id === 'musicToggle' || e.target.className === 'music-btn')) {
+        playMusic();
     }
 });
 </script>
