@@ -369,7 +369,7 @@ if shared_wish_id:
     st.markdown(f"### 🎅 Message from your friend:")
     
     # Text message
-    shared_message = "Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck and help make my wish come true!"
+    shared_message = "Merry Xmas! I just made a wish for 2026. Please share your luck and help make my wish come true!"
 
     try:
     # Convert message to audio
@@ -484,7 +484,7 @@ if shared_wish_id:
 if not st.session_state.show_wish_results:
     st.markdown("""
     <div style='text-align: center; padding: 20px;'> 
-        <h2>✨ Hi there, Xmas! 🎄</h2>
+        <h2>✨ Hi there, Merry Xmas! 🎄</h2>
         <p style='font-size: 18px;'>Tell me your wish for 2026, and I'll help evaluate the probability!</p>
     </div>
     """, unsafe_allow_html=True)
