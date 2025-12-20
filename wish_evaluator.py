@@ -568,11 +568,11 @@ if not st.session_state.show_wish_results:
     # Compact welcome message
     st.markdown("""
     <div class="center-content"> 
-        <h3 style="margin: 12px 0;">
+        <h3 style="margin: 14px 0;">
             <span style="color: #C41E3A; font-weight: bold;">Hi</span>
-            <span style="color: #228B22; font-weight: bold;">there,</span>
+            <span style="color: #C41E3A; font-weight: bold;">there,</span>
             <span style="color: #FFD700; font-weight: bold;">Merry</span>
-            <span style="color: #FFFFFF; text-shadow: 1px 1px 2px #000; font-weight: bold;">Xmas!</span>
+            <span style="color: #228B22; font-weight: bold;">Xmas!</span>
         </h3>
         <p style="margin: 5px 0; font-size: 16px;">Tell me your wish for 2026, and I'll help evaluate the probability!</p>
     </div>
