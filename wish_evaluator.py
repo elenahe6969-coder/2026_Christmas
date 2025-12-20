@@ -442,10 +442,6 @@ if shared_wish_id:
     # Try to create audio version
     audio_success = False
     try:
-        # Import inside try block
-        from io import BytesIO
-        from gtts import gTTS
-        
         # Convert message to audio
         tts = gTTS(text=shared_message, lang='en')
         
@@ -457,14 +453,9 @@ if shared_wish_id:
         # Display audio player
         st.markdown("<p style='margin: 5px 0; font-size: 14px;'>**🔊 Listen to the message:**</p>", unsafe_allow_html=True)
         st.audio(audio_bytes, format="audio/mp3")
-        audio_success = True
         
     except Exception as e:
         # If audio fails, just show the text
-        audio_success = False
-    
-    # Only show the text message if audio failed
-    if not audio_success:
         st.markdown(f"""
         <div style="padding: 12px; background: #fff3cd; border-radius: 8px; margin: 8px 0; font-size: 14px;">
             <i>"{shared_message}"</i>
