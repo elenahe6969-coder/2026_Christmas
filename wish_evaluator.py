@@ -578,99 +578,101 @@ if not st.session_state.show_wish_results:
     </div>
     """, unsafe_allow_html=True)
     
-    # Add snow animation CSS
+    # Add snow animation CSS for textarea
     st.markdown("""
     <style>
-    /* Snow container for textarea */
-    .snow-container {
+    /* Container for the textarea with snow effect */
+    .snowy-textarea-container {
         position: relative;
-        overflow: hidden;
-        border-radius: 10px;
+        overflow: visible !important;
+        margin: 15px 0;
     }
     
-    /* Snowflakes */
+    /* Snowflakes around the textarea */
+    .snowy-textarea-container::before,
+    .snowy-textarea-container::after {
+        content: "❄";
+        position: absolute;
+        color: white;
+        font-size: 12px;
+        opacity: 0.7;
+        animation: snowFloat 3s linear infinite;
+        z-index: 10;
+        pointer-events: none;
+    }
+    
+    .snowy-textarea-container::before {
+        top: -15px;
+        left: 10%;
+        animation-delay: 0s;
+    }
+    
+    .snowy-textarea-container::after {
+        top: -10px;
+        right: 15%;
+        animation-delay: 1.5s;
+    }
+    
+    /* Additional snowflake elements */
     .snowflake {
         position: absolute;
-        background: white;
-        border-radius: 50%;
+        color: white;
+        font-size: 10px;
+        opacity: 0;
+        animation: snowFloat 3s linear infinite;
         pointer-events: none;
-        opacity: 0.8;
-        z-index: 1000;
-        animation: fall linear infinite;
+        z-index: 10;
     }
     
-    @keyframes fall {
-        to {
-            transform: translateY(100px) rotate(360deg);
+    @keyframes snowFloat {
+        0% {
+            transform: translateY(-10px) rotate(0deg);
+            opacity: 0;
+        }
+        20% {
+            opacity: 0.8;
+        }
+        80% {
+            opacity: 0.8;
+        }
+        100% {
+            transform: translateY(40px) rotate(360deg);
+            opacity: 0;
         }
     }
     
-    /* Make textarea stand out */
-    .snowy-textarea {
-        position: relative;
-        z-index: 1;
-        background: rgba(255, 255, 255, 0.95) !important;
+    /* Make textarea look festive */
+    div[data-testid="stTextArea"] textarea {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
         border: 2px solid #4CAF50 !important;
-        box-shadow: 0 0 15px rgba(76, 175, 80, 0.3) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        padding: 15px !important;
+        font-size: 16px !important;
+        transition: all 0.3s ease !important;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%234CAF50' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E") !important;
     }
     
-    /* Snowflake sizes */
-    .snowflake.small {
-        width: 4px;
-        height: 4px;
+    div[data-testid="stTextArea"] textarea:focus {
+        border-color: #FF6B6B !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2) !important;
+        outline: none !important;
     }
     
-    .snowflake.medium {
-        width: 6px;
-        height: 6px;
-    }
-    
-    .snowflake.large {
-        width: 8px;
-        height: 8px;
+    div[data-testid="stTextArea"] textarea::placeholder {
+        color: #666 !important;
+        font-style: italic !important;
     }
     </style>
     
-    <div id="snowContainer" class="snow-container"></div>
-    
-    <script>
-    // Create snowflakes
-    function createSnowflakes() {
-        const container = document.getElementById('snowContainer');
-        if (!container) return;
-        
-        // Create 15 snowflakes
-        for (let i = 0; i < 15; i++) {
-            const snowflake = document.createElement('div');
-            const size = Math.random() > 0.66 ? 'large' : (Math.random() > 0.33 ? 'medium' : 'small');
-            
-            snowflake.className = `snowflake ${size}`;
-            snowflake.style.left = Math.random() * 100 + '%';
-            snowflake.style.top = -10 + 'px';
-            snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            snowflake.style.animationDelay = Math.random() * 2 + 's';
-            snowflake.style.opacity = Math.random() * 0.5 + 0.3;
-            
-            container.appendChild(snowflake);
-            
-            // Remove snowflake after animation completes
-            setTimeout(() => {
-                if (snowflake.parentNode) {
-                    snowflake.parentNode.removeChild(snowflake);
-                }
-            }, parseFloat(snowflake.style.animationDuration) * 1000 + 2000);
-        }
-        
-        // Create more snowflakes every 300ms
-        setTimeout(createSnowflakes, 300);
-    }
-    
-    // Start snow when page loads
-    window.addEventListener('load', createSnowflakes);
-    
-    // Also start when the textarea container is ready
-    setTimeout(createSnowflakes, 1000);
-    </script>
+    <div class="snowy-textarea-container">
+        <!-- Snowflake elements -->
+        <div class="snowflake" style="left: 5%; animation-delay: 0.5s;">❄</div>
+        <div class="snowflake" style="left: 30%; animation-delay: 1s;">❄</div>
+        <div class="snowflake" style="left: 70%; animation-delay: 0.2s;">❄</div>
+        <div class="snowflake" style="left: 90%; animation-delay: 2s;">❆</div>
+        <div class="snowflake" style="left: 50%; animation-delay: 1.2s;">❆</div>
+    </div>
     """, unsafe_allow_html=True)
     
     # Textarea with snowy effect
@@ -678,12 +680,8 @@ if not st.session_state.show_wish_results:
         placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
         height=100,
-        help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!",
-        label_visibility="collapsed"  # Hide the default label
+        help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
     )
-    
-    # Add a custom label above the textarea
-    st.markdown('<p style="margin: 5px 0 10px 0; font-weight: bold; color: #2c3e50;">🎅 What\'s your wish?</p>', unsafe_allow_html=True)
     
     # Center the evaluate button
     st.markdown('<div class="center-content">', unsafe_allow_html=True)
