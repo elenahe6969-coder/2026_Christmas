@@ -536,7 +536,7 @@ if shared_wish_id:
     st.markdown("---")
     st.markdown("""
     <div class="footer-compact">
-        <p> <i>Hope your wish comes true in 2026! - Yours, Elena</i> </p>
+        <p> <i>Hope your wish comes true in 2026! - Yours, Elena 🎄</i> </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -792,7 +792,7 @@ else:
 st.markdown("---")
 st.markdown("""
 <div class="footer-compact">
-    <p> <i>Hope your wishes come true in 2026! - Yours, Elena</i> </p>
+    <p> <i>Hope your wishes come true in 2026! - Yours, Elena 🎄</i> </p>
 </div>
 """, unsafe_allow_html=True)
 
