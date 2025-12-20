@@ -27,6 +27,11 @@ if 'last_refresh_time' not in st.session_state:
     st.session_state.last_refresh_time = time.time()
 if 'refresh_counter' not in st.session_state:
     st.session_state.refresh_counter = 0
+# Add music control to session state
+if 'music_playing' not in st.session_state:
+    st.session_state.music_playing = True
+if 'music_volume' not in st.session_state:
+    st.session_state.music_volume = 0.3  # Default volume (30%)
 
 # File to store wishes (shared across all users)
 WISHES_FILE = "wishes_data.json"
@@ -383,7 +388,212 @@ st.markdown("""
         text-align: center;
         padding: 5px 0;
     }
+    
+    /* Music control styles */
+    .music-controls {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        backdrop-filter: blur(5px);
+        border: 1px solid #e0e0e0;
+    }
+    
+    .music-btn {
+        background: #FF6B6B;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: all 0.3s;
+    }
+    
+    .music-btn:hover {
+        background: #FF5252;
+        transform: scale(1.1);
+    }
+    
+    .volume-slider {
+        width: 80px;
+    }
+    
+    /* Snow effect for textarea */
+    .snowy-textarea-container {
+        position: relative;
+        overflow: visible !important;
+        margin: 15px 0;
+    }
+    
+    .snowy-textarea-container::before,
+    .snowy-textarea-container::after {
+        content: "❄";
+        position: absolute;
+        color: white;
+        font-size: 12px;
+        opacity: 0.7;
+        animation: snowFloat 3s linear infinite;
+        z-index: 10;
+        pointer-events: none;
+    }
+    
+    .snowy-textarea-container::before {
+        top: -15px;
+        left: 10%;
+        animation-delay: 0s;
+    }
+    
+    .snowy-textarea-container::after {
+        top: -10px;
+        right: 15%;
+        animation-delay: 1.5s;
+    }
+    
+    .snowflake {
+        position: absolute;
+        color: white;
+        font-size: 10px;
+        opacity: 0;
+        animation: snowFloat 3s linear infinite;
+        pointer-events: none;
+        z-index: 10;
+    }
+    
+    @keyframes snowFloat {
+        0% {
+            transform: translateY(-10px) rotate(0deg);
+            opacity: 0;
+        }
+        20% {
+            opacity: 0.8;
+        }
+        80% {
+            opacity: 0.8;
+        }
+        100% {
+            transform: translateY(40px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+    
+    div[data-testid="stTextArea"] textarea {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+        border: 2px solid #4CAF50 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        padding: 15px !important;
+        font-size: 16px !important;
+        transition: all 0.3s ease !important;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%234CAF50' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E") !important;
+    }
+    
+    div[data-testid="stTextArea"] textarea:focus {
+        border-color: #FF6B6B !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2) !important;
+        outline: none !important;
+    }
+    
+    div[data-testid="stTextArea"] textarea::placeholder {
+        color: #666 !important;
+        font-style: italic !important;
+    }
 </style>
+""", unsafe_allow_html=True)
+
+# ---------------------------
+# Background Music
+# ---------------------------
+# Add background music with controls
+st.markdown("""
+<div class="music-controls" id="musicControls">
+    <button class="music-btn" onclick="toggleMusic()" id="musicToggle">🎵</button>
+    <input type="range" min="0" max="100" value="30" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)">
+</div>
+
+<audio id="bgMusic" loop autoplay>
+    <!-- Using a free Christmas music URL that works in browsers -->
+    <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
+    <!-- Fallback music sources -->
+    <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-is-here-276.mp3" type="audio/mpeg">
+    <source src="https://assets.mixkit.co/music/preview/mixkit-sleigh-bells-308.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// Get audio element
+const bgMusic = document.getElementById('bgMusic');
+const musicToggle = document.getElementById('musicToggle');
+const volumeSlider = document.getElementById('volumeSlider');
+
+// Set initial volume
+bgMusic.volume = 0.3;
+
+// Try to play music automatically (browsers may block this)
+function playMusic() {
+    bgMusic.play().catch(e => {
+        console.log("Autoplay blocked:", e);
+        // Show play button if autoplay is blocked
+        musicToggle.textContent = "▶️";
+    });
+}
+
+// Call play on page load
+window.addEventListener('load', function() {
+    setTimeout(playMusic, 1000);
+});
+
+// Toggle music play/pause
+function toggleMusic() {
+    if (bgMusic.paused) {
+        bgMusic.play();
+        musicToggle.textContent = "🎵";
+    } else {
+        bgMusic.pause();
+        musicToggle.textContent = "▶️";
+    }
+}
+
+// Change volume
+function changeVolume(value) {
+    bgMusic.volume = value / 100;
+}
+
+// Also try to play when user interacts with the page
+document.addEventListener('click', function() {
+    if (bgMusic.paused) {
+        bgMusic.play().then(() => {
+            musicToggle.textContent = "🎵";
+        }).catch(e => {
+            // Autoplay still blocked
+        });
+    }
+}, { once: true });
+
+// Save volume to session
+volumeSlider.addEventListener('change', function() {
+    localStorage.setItem('wishAppVolume', this.value);
+});
+
+// Load saved volume
+window.addEventListener('load', function() {
+    const savedVolume = localStorage.getItem('wishAppVolume');
+    if (savedVolume) {
+        volumeSlider.value = savedVolume;
+        bgMusic.volume = savedVolume / 100;
+    }
+});
+</script>
 """, unsafe_allow_html=True)
 
 # ---------------------------
@@ -442,6 +652,10 @@ if shared_wish_id:
     # Try to create audio version
     audio_success = False
     try:
+        # Import inside try block
+        from io import BytesIO
+        from gtts import gTTS
+        
         # Convert message to audio
         tts = gTTS(text=shared_message, lang='en')
         
@@ -453,9 +667,14 @@ if shared_wish_id:
         # Display audio player
         st.markdown("<p style='margin: 5px 0; font-size: 14px;'>**🔊 Listen to the message:**</p>", unsafe_allow_html=True)
         st.audio(audio_bytes, format="audio/mp3")
+        audio_success = True
         
     except Exception as e:
         # If audio fails, just show the text
+        audio_success = False
+    
+    # Only show the text message if audio failed
+    if not audio_success:
         st.markdown(f"""
         <div style="padding: 12px; background: #fff3cd; border-radius: 8px; margin: 8px 0; font-size: 14px;">
             <i>"{shared_message}"</i>
@@ -536,7 +755,7 @@ if shared_wish_id:
     st.markdown("---")
     st.markdown("""
     <div class="footer-compact">
-        <p> <i>Hope your wish comes true in 2026! - Yours, Elena 🎄</i> </p>
+        <p>🎄 <i>Hope your friend's wish comes true in 2026! - Yours, Elena</i> 🎄</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -568,103 +787,18 @@ if not st.session_state.show_wish_results:
     # Compact welcome message with Christmas-themed colors for each word
     st.markdown("""
     <div class="center-content"> 
-        <h3 style="margin: 16px 0;">
+        <h3 style="margin: 10px 0;">
             <span style="color: #C41E3A; font-weight: bold;">Hi</span>
-            <span style="color: #C41E3A; font-weight: bold;">there,</span>
+            <span style="color: #228B22; font-weight: bold;">there,</span>
             <span style="color: #FFD700; font-weight: bold;">Merry</span>
-            <span style="color: #228B22; text-shadow: 1px 1px 2px #000; font-weight: bold;">Xmas!</span>
+            <span style="color: #FFFFFF; text-shadow: 1px 1px 2px #000; font-weight: bold;">Xmas!</span>
         </h3>
         <p style="margin: 5px 0; font-size: 16px;">Tell me your wish for 2026, and I'll help evaluate the probability!</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Add snow animation CSS for textarea
+    # Add snow effect container
     st.markdown("""
-    <style>
-    /* Container for the textarea with snow effect */
-    .snowy-textarea-container {
-        position: relative;
-        overflow: visible !important;
-        margin: 15px 0;
-    }
-    
-    /* Snowflakes around the textarea */
-    .snowy-textarea-container::before,
-    .snowy-textarea-container::after {
-        content: "❄";
-        position: absolute;
-        color: white;
-        font-size: 12px;
-        opacity: 0.7;
-        animation: snowFloat 3s linear infinite;
-        z-index: 10;
-        pointer-events: none;
-    }
-    
-    .snowy-textarea-container::before {
-        top: -15px;
-        left: 10%;
-        animation-delay: 0s;
-    }
-    
-    .snowy-textarea-container::after {
-        top: -10px;
-        right: 15%;
-        animation-delay: 1.5s;
-    }
-    
-    /* Additional snowflake elements */
-    .snowflake {
-        position: absolute;
-        color: white;
-        font-size: 10px;
-        opacity: 0;
-        animation: snowFloat 3s linear infinite;
-        pointer-events: none;
-        z-index: 10;
-    }
-    
-    @keyframes snowFloat {
-        0% {
-            transform: translateY(-10px) rotate(0deg);
-            opacity: 0;
-        }
-        20% {
-            opacity: 0.8;
-        }
-        80% {
-            opacity: 0.8;
-        }
-        100% {
-            transform: translateY(40px) rotate(360deg);
-            opacity: 0;
-        }
-    }
-    
-    /* Make textarea look festive */
-    div[data-testid="stTextArea"] textarea {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
-        border: 2px solid #4CAF50 !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-        padding: 15px !important;
-        font-size: 16px !important;
-        transition: all 0.3s ease !important;
-        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%234CAF50' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E") !important;
-    }
-    
-    div[data-testid="stTextArea"] textarea:focus {
-        border-color: #FF6B6B !important;
-        box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2) !important;
-        outline: none !important;
-    }
-    
-    div[data-testid="stTextArea"] textarea::placeholder {
-        color: #666 !important;
-        font-style: italic !important;
-    }
-    </style>
-    
     <div class="snowy-textarea-container">
         <!-- Snowflake elements -->
         <div class="snowflake" style="left: 5%; animation-delay: 0.5s;">❄</div>
@@ -677,7 +811,7 @@ if not st.session_state.show_wish_results:
     
     # Textarea with snowy effect
     wish_prompt = st.text_area("🎅 What's your wish?",
-        placeholder="Example: I want to be Superman...",
+        placeholder="Example: I wish to learn Spanish fluently in 2026...",
         key="wish_input",
         height=100,
         help="Write your wish starting with 'I wish', 'I hope', or 'I want' for best results!"
@@ -792,7 +926,7 @@ else:
 st.markdown("---")
 st.markdown("""
 <div class="footer-compact">
-    <p> <i>Hope your wishes come true in 2026! - Yours, Elena 🎄</i> </p>
+    <p>🎄 <i>Hope your wishes come true in 2026! - Yours, Elena</i> 🎄</p>
 </div>
 """, unsafe_allow_html=True)
 
