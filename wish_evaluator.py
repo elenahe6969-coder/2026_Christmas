@@ -371,14 +371,23 @@ if shared_wish_id:
     # Text message
     shared_message = "Merry Christmas! I just made a wish for 2026. Please click the button below to share your luck and help make my wish come true!"
 
-    # Convert message to audio and save to a temporary file for mobile compatibility
+    try:
+    # Convert message to audio
     tts = gTTS(text=shared_message, lang='en')
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-        tts.write_to_fp(tmp_file)
-        tmp_file_path = tmp_file.name
-
-    # Display audio player
-    st.audio(tmp_file_path, format="audio/mp3")
+    
+    # Save to BytesIO
+    audio_bytes = BytesIO()
+    tts.write_to_fp(audio_bytes)
+    audio_bytes.seek(0)
+    
+    # Display with Streamlit's audio player
+    st.markdown(f'<div style="margin: 10px 0;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+    st.markdown("**🔊 Listen to the message:**")
+    st.audio(audio_bytes, format="audio/mp3")
+    
+    except Exception as e:
+    # Fallback
+    st.markdown(f'<div style="padding: 15px; background: #fff3cd; border-radius: 10px; margin: 10px 0;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
 
     # Decode wish text
     decoded_wish = ""
