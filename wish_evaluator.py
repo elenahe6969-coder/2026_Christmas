@@ -568,7 +568,7 @@ if not st.session_state.show_wish_results:
     # Compact welcome message
     st.markdown("""
     <div class="center-content"> 
-        <h3 style="margin: 14px 0;">
+        <h3 style="margin: 18px 0;">
             <span style="color: #C41E3A; font-weight: bold;">Hi</span>
             <span style="color: #C41E3A; font-weight: bold;">there,</span>
             <span style="color: #FFD700; font-weight: bold;">Merry</span>
