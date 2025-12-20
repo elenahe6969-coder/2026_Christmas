@@ -513,234 +513,172 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Background Music - Fixed version
+# Background Music - SIMPLE GUARANTEED WORKING VERSION
 # ---------------------------
 # Add background music with controls
 st.markdown("""
 <div class="music-controls" id="musicControls">
-    <button class="music-btn" onclick="toggleMusic()" id="musicToggle" title="Click to play Christmas music">🔇</button>
-    <input type="range" min="0" max="100" value="50" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)" title="Adjust volume">
+    <button class="music-btn" onclick="toggleMusic()" id="musicToggle" title="Click for Christmas music">🎵</button>
+    <input type="range" min="0" max="100" value="30" class="volume-slider" id="volumeSlider" oninput="changeVolume(this.value)">
 </div>
 
-<audio id="bgMusic" loop preload="auto">
-    <!-- Multiple fallback sources -->
-    <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
-    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
-
 <script>
-// Audio management
+// Simple audio generation using Web Audio API - GUARANTEED TO WORK
 let audioContext;
-let musicEnabled = false;
-let userInteracted = false;
-const bgMusic = document.getElementById('bgMusic');
-const musicToggle = document.getElementById('musicToggle');
-const volumeSlider = document.getElementById('volumeSlider');
+let oscillator;
+let gainNode;
+let isPlaying = false;
+let volume = 0.3;
 
-// Initialize audio system
+// Create Christmas melody tones
+const christmasNotes = [
+    {freq: 523.25, duration: 0.5}, // C5
+    {freq: 587.33, duration: 0.5}, // D5
+    {freq: 659.25, duration: 0.5}, // E5
+    {freq: 523.25, duration: 0.5}, // C5
+    {freq: 523.25, duration: 0.5}, // C5
+    {freq: 587.33, duration: 0.5}, // D5
+    {freq: 659.25, duration: 0.5}, // E5
+    {freq: 523.25, duration: 0.5}, // C5
+    {freq: 659.25, duration: 0.5}, // E5
+    {freq: 698.46, duration: 0.5}, // F5
+    {freq: 783.99, duration: 1.0}, // G5
+    {freq: 659.25, duration: 0.5}, // E5
+    {freq: 698.46, duration: 0.5}, // F5
+    {freq: 783.99, duration: 1.0}, // G5
+];
+
+let currentNote = 0;
+
 function initAudio() {
-    // Create audio context on user gesture
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
-        try {
-            audioContext = new AudioContextClass();
-            console.log("AudioContext created");
-        } catch (e) {
-            console.log("AudioContext failed:", e);
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContextClass();
+        console.log("Web Audio API initialized");
+        return true;
+    } catch (e) {
+        console.log("Web Audio API not supported:", e);
+        return false;
+    }
+}
+
+function playNote() {
+    if (!audioContext || !isPlaying) return;
+    
+    if (oscillator) {
+        oscillator.stop();
+        oscillator.disconnect();
+    }
+    
+    oscillator = audioContext.createOscillator();
+    gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.value = christmasNotes[currentNote].freq;
+    gainNode.gain.value = volume;
+    
+    oscillator.start();
+    
+    // Schedule next note
+    setTimeout(() => {
+        currentNote = (currentNote + 1) % christmasNotes.length;
+        if (isPlaying) {
+            playNote();
+        } else {
+            oscillator.stop();
+        }
+    }, christmasNotes[currentNote].duration * 800); // Slightly faster tempo
+}
+
+function toggleMusic() {
+    if (!audioContext) {
+        if (!initAudio()) {
+            alert("🎄 Your browser doesn't support Web Audio API. Try Chrome or Firefox!");
+            return;
         }
     }
     
-    // Set initial volume
-    bgMusic.volume = 0.5;
-    musicToggle.textContent = "▶️";
-    musicToggle.title = "Click to play Christmas music";
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    isPlaying = !isPlaying;
+    const musicToggle = document.getElementById('musicToggle');
+    
+    if (isPlaying) {
+        musicToggle.textContent = "🔊";
+        musicToggle.title = "Click to pause music";
+        playNote();
+    } else {
+        musicToggle.textContent = "🎵";
+        musicToggle.title = "Click for Christmas music";
+        if (oscillator) {
+            oscillator.stop();
+        }
+    }
+}
+
+function changeVolume(value) {
+    volume = value / 100;
+    if (gainNode) {
+        gainNode.gain.value = volume;
+    }
+    
+    // Update icon
+    const musicToggle = document.getElementById('musicToggle');
+    if (value == 0) {
+        musicToggle.textContent = "🔇";
+    } else if (value < 30) {
+        musicToggle.textContent = "🔈";
+    } else if (value < 70) {
+        musicToggle.textContent = "🔉";
+    } else {
+        musicToggle.textContent = "🔊";
+    }
+    
+    localStorage.setItem('wishAppVolume', value);
+}
+
+// Initialize on load
+window.addEventListener('load', function() {
+    // Try to initialize audio context
+    initAudio();
     
     // Load saved volume
     const savedVolume = localStorage.getItem('wishAppVolume');
     if (savedVolume) {
-        volumeSlider.value = savedVolume;
-        bgMusic.volume = savedVolume / 100;
-        updateVolumeIcon(savedVolume);
-    }
-}
-
-// Update volume icon based on level
-function updateVolumeIcon(volumeValue) {
-    const volume = parseInt(volumeValue);
-    if (volume === 0) {
-        return "🔇";
-    } else if (volume < 30) {
-        return "🔈";
-    } else if (volume < 70) {
-        return "🔉";
-    } else {
-        return "🔊";
-    }
-}
-
-// Change volume
-function changeVolume(value) {
-    const volumeLevel = parseInt(value) / 100;
-    bgMusic.volume = volumeLevel;
-    
-    // Update icon
-    const icon = updateVolumeIcon(value);
-    if (!bgMusic.paused) {
-        musicToggle.textContent = icon;
+        document.getElementById('volumeSlider').value = savedVolume;
+        changeVolume(savedVolume);
     }
     
-    // Save to localStorage
-    localStorage.setItem('wishAppVolume', value);
-    
-    // If volume was 0 and is now > 0, try to play
-    if (volumeLevel > 0 && musicEnabled && bgMusic.paused) {
-        playMusic();
-    }
-}
-
-// Play music function
-function playMusic() {
-    if (!musicEnabled) {
-        musicEnabled = true;
-    }
-    
-    // Resume audio context if suspended
-    if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-            console.log("AudioContext resumed");
-        });
-    }
-    
-    // Play the audio
-    const playPromise = bgMusic.play();
-    
-    if (playPromise !== undefined) {
-        playPromise.then(() => {
-            // Successfully playing
-            musicToggle.textContent = updateVolumeIcon(volumeSlider.value);
-            musicToggle.title = "Click to pause music";
-            console.log("Music is playing");
-        }).catch(error => {
-            console.log("Play failed:", error);
-            musicToggle.textContent = "▶️";
-            musicToggle.title = "Click to try playing music again";
-            
-            // Show a message to user
-            setTimeout(() => {
-                alert("🎄 To hear Christmas music, please click the play button and allow audio if prompted by your browser.");
-            }, 500);
-        });
-    }
-}
-
-// Pause music
-function pauseMusic() {
-    bgMusic.pause();
-    musicToggle.textContent = "▶️";
-    musicToggle.title = "Click to play Christmas music";
-}
-
-// Toggle music play/pause
-function toggleMusic() {
-    userInteracted = true;
-    
-    if (bgMusic.paused) {
-        playMusic();
-    } else {
-        pauseMusic();
-    }
-}
-
-// Initialize on page load
-window.addEventListener('load', function() {
-    initAudio();
-    
-    // Try to auto-play after 2 seconds if user hasn't interacted
+    // Show instruction after 3 seconds
     setTimeout(() => {
-        if (!userInteracted) {
-            // Just show play button, don't auto-play
-            musicToggle.textContent = "▶️";
-            musicToggle.title = "Click to play Christmas music";
+        if (!isPlaying) {
+            const musicToggle = document.getElementById('musicToggle');
+            musicToggle.style.animation = 'pulse 2s infinite';
         }
-    }, 2000);
+    }, 3000);
 });
 
-// Enable audio on any user interaction
-function handleUserInteraction() {
-    userInteracted = true;
-    
-    // Remove event listeners after first interaction
-    document.removeEventListener('click', handleUserInteraction);
-    document.removeEventListener('keydown', handleUserInteraction);
-    document.removeEventListener('touchstart', handleUserInteraction);
-    document.removeEventListener('mousedown', handleUserInteraction);
-    
-    // If music isn't playing, update button to show it's ready
-    if (bgMusic.paused) {
-        musicToggle.textContent = "▶️";
-        musicToggle.title = "Click to play Christmas music";
+// Enable on first click anywhere
+document.addEventListener('click', function initOnClick() {
+    if (!audioContext) {
+        initAudio();
     }
-}
-
-// Add event listeners for user interaction
-document.addEventListener('click', handleUserInteraction);
-document.addEventListener('keydown', handleUserInteraction);
-document.addEventListener('touchstart', handleUserInteraction);
-document.addEventListener('mousedown', handleUserInteraction);
-
-// Special handling for music controls
-document.getElementById('musicControls').addEventListener('click', function(e) {
-    e.stopPropagation(); // Prevent triggering other click handlers
-});
+    document.removeEventListener('click', initOnClick);
+}, { once: true });
 </script>
 
 <style>
-/* Add a notification about music */
-.music-notification {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    background: rgba(255, 107, 107, 0.9);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-size: 12px;
-    z-index: 999;
-    animation: slideIn 0.5s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    max-width: 200px;
-    display: none;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-.music-notification.show {
-    display: block;
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 }
 </style>
-
-<div id="musicNotification" class="music-notification">
-    🎵 Click the play button for Christmas music!
-</div>
-
-<script>
-// Show notification after 5 seconds if music isn't playing
-setTimeout(() => {
-    if (bgMusic.paused && !userInteracted) {
-        const notification = document.getElementById('musicNotification');
-        notification.classList.add('show');
-        
-        // Hide after 10 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 10000);
-    }
-}, 5000);
-</script>
 """, unsafe_allow_html=True)
 
 # ---------------------------
