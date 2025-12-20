@@ -528,7 +528,6 @@ if shared_wish_id:
     # Make your own wish section with compact spacing
     st.markdown("---")
     st.markdown("### Make Your Own Wish?")
-    st.markdown('<div class="center-content">', unsafe_allow_html=True)
     st.markdown("https://2026christmas-yourwish-mywish-elena.streamlit.app/")
     st.markdown('</div>', unsafe_allow_html=True)
 
