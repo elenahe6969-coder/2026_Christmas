@@ -447,6 +447,31 @@ if shared_wish_id:
     # Text message
     shared_message = "Merry Xmas! I just made a wish for 2026. Please share your luck and help make my wish come true!"
 
+    try:
+        # Try to create audio version
+        from io import BytesIO
+        from gtts import gTTS
+        
+        # Convert message to audio
+        tts = gTTS(text=shared_message, lang='en')
+        
+        # Save to BytesIO
+        audio_bytes = BytesIO()
+        tts.write_to_fp(audio_bytes)
+        audio_bytes.seek(0)
+        
+        # Display with compact spacing
+        st.markdown(f'<div style="margin: 8px 0; font-size: 14px;"><i>"{shared_message}"</i></div>', unsafe_allow_html=True)
+        st.audio(audio_bytes, format="audio/mp3")
+        
+    except Exception as e:
+        # Fallback without audio
+        st.markdown(f"""
+        <div style="padding: 12px; background: #fff3cd; border-radius: 8px; margin: 8px 0; font-size: 14px;">
+            <i>"{shared_message}"</i>
+        </div>
+        """, unsafe_allow_html=True)
+
     # Decode wish text
     decoded_wish = ""
     if shared_wish_text:
